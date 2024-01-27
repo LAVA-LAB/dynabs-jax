@@ -6,20 +6,19 @@ from core.model import parse_model
 from core.partition import RectangularPartition
 from core.actions import RectangularTarget, compute_enabled_actions
 
-from jax.lib import xla_bridge
-print(xla_bridge.get_backend().platform)
-
 # Define and parse model
 base_model = Drone2D()
 model = parse_model(base_model)
 
-mode = ['fori_loop', 'vmap', 'pmap', 'python'][2]
+mode = ['fori_loop', 'vmap', 'python'][0]
 
 partition = RectangularPartition(number_per_dim=model.partition['number_per_dim'],
                                  partition_boundary=model.partition['boundary'],
                                  goal_regions=model.goal,
                                  critical_regions=model.critical,
                                  mode = mode)
+
+assert False
 
 actions = RectangularTarget(target_points=partition.regions['centers'],
                             model=model)

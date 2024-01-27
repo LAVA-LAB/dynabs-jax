@@ -49,6 +49,9 @@ def center2halfspace(center, cell_width):
 from .polytope import points_in_polytope
 vmap_points_in_polytope = jax.jit(jax.vmap(points_in_polytope, in_axes=(0, 0, None), out_axes=0))
 
+from .polytope import any_points_in_polytope
+vmap_any_points_in_polytope = jax.jit(jax.vmap(any_points_in_polytope, in_axes=(0, 0, None), out_axes=0))
+
 @jax.jit
 def check_if_region_in_goal(goals_A, goals_b, points):
 
@@ -168,18 +171,7 @@ class RectangularPartition(object):
 
         elif mode == 'vmap':
 
-            from .polytope import any_points_in_polytope
-            vmap_any_points_in_polytope = jax.jit(jax.vmap(any_points_in_polytope, in_axes=(0, 0, None), out_axes=0))
-
             critical_regions_bools = vmap_any_points_in_polytope(self.regions['A'], self.regions['b'],
-                                                                 critical_samples)
-
-        elif mode == 'pmap':
-
-            from .polytope import any_points_in_polytope
-            pmap_any_points_in_polytope = jax.jit(jax.pmap(any_points_in_polytope, in_axes=(0, 0, None), out_axes=0, devices=jax.devices('cpu')))
-
-            critical_regions_bools = pmap_any_points_in_polytope(self.regions['A'], self.regions['b'],
                                                                  critical_samples)
 
         else:
