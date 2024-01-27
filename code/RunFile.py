@@ -18,8 +18,6 @@ partition = RectangularPartition(number_per_dim=model.partition['number_per_dim'
                                  critical_regions=model.critical,
                                  mode = mode)
 
-assert False
-
 actions = RectangularTarget(target_points=partition.regions['centers'],
                             model=model)
 
