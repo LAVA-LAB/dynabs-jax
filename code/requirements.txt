@@ -1,0 +1,21 @@
+# List of used packages
+cvxpy==1.2.0
+imageio==2.9.0
+matplotlib==3.3.4
+numpy==1.26.2
+opencv-python==4.8.0.76
+pandas==2.1.4
+pyopengl==3.1.5
+pyqt5==5.15.2
+scipy==1.12.0
+seaborn==0.13.0
+visvis==1.12.4
+xlrd==2.0.1
+xlsxwriter==3.0.1
+tqdm==4.66.1
+wheel==0.42.0
+setuptools==69.0.2
+jax==0.4.20
+jaxlib==0.4.20
+ipython==8.20.0
+pycddlib
