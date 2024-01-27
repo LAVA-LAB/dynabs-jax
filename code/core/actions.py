@@ -89,7 +89,7 @@ def compute_enabled_actions(As, bs, region_vertices, mode = 'fori_loop'):
     elif mode == 'pmap':
 
         pmap_compute_actions_enabled_in_region = jax.jit(
-            jax.pmap(vmap_all_points_in_polytope, in_axes=(None, None, 0), out_axes=0))
+            jax.pmap(vmap_all_points_in_polytope, in_axes=(None, None, 0), out_axes=0), devices=jax.devices('cpu'))
 
         enabled_actions = pmap_compute_actions_enabled_in_region(As, bs, region_vertices)
 
