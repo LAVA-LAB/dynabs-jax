@@ -60,7 +60,6 @@ class RectangularTarget(object):
 # Vectorized function over different polytopes
 from .polytope import all_points_in_polytope
 vmap_all_points_in_polytope = jax.jit(jax.vmap(all_points_in_polytope, in_axes=(0, 0, None), out_axes=0))
-vmap_compute_actions_enabled_in_region = jax.jit(jax.vmap(vmap_all_points_in_polytope, in_axes=(None, None, 0), out_axes=0))
 
 def compute_enabled_actions(As, bs, region_vertices, mode = 'fori_loop'):
     print('Compute subset of enabled actions in each partition element...')
@@ -82,7 +81,17 @@ def compute_enabled_actions(As, bs, region_vertices, mode = 'fori_loop'):
 
     elif mode == 'vmap':
 
+        vmap_compute_actions_enabled_in_region = jax.jit(
+            jax.vmap(vmap_all_points_in_polytope, in_axes=(None, None, 0), out_axes=0))
+
         enabled_actions = vmap_compute_actions_enabled_in_region(As, bs, region_vertices)
+
+    elif mode == 'pmap':
+
+        pmap_compute_actions_enabled_in_region = jax.jit(
+            jax.pmap(vmap_all_points_in_polytope, in_axes=(None, None, 0), out_axes=0))
+
+        enabled_actions = pmap_compute_actions_enabled_in_region(As, bs, region_vertices)
 
     else:
 

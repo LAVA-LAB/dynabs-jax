@@ -10,7 +10,7 @@ from core.actions import RectangularTarget, compute_enabled_actions
 base_model = Drone2D()
 model = parse_model(base_model)
 
-mode = ['fori_loop', 'vmap', 'python'][0]
+mode = ['fori_loop', 'vmap', 'pmap', 'python'][2]
 
 partition = RectangularPartition(number_per_dim=model.partition['number_per_dim'],
                                  partition_boundary=model.partition['boundary'],
