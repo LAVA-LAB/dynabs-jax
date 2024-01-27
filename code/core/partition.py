@@ -177,7 +177,7 @@ class RectangularPartition(object):
         elif mode == 'pmap':
 
             from .polytope import any_points_in_polytope
-            pmap_any_points_in_polytope = jax.jit(jax.pmap(any_points_in_polytope, in_axes=(0, 0, None), out_axes=0), devices=jax.devices('cpu'))
+            pmap_any_points_in_polytope = jax.jit(jax.pmap(any_points_in_polytope, in_axes=(0, 0, None), out_axes=0, devices=jax.devices('cpu')))
 
             critical_regions_bools = pmap_any_points_in_polytope(self.regions['A'], self.regions['b'],
                                                                  critical_samples)
