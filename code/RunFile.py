@@ -6,6 +6,9 @@ from core.model import parse_model
 from core.partition import RectangularPartition
 from core.actions import RectangularTarget, compute_enabled_actions
 
+from jax.lib import xla_bridge
+print(xla_bridge.get_backend().platform)
+
 # Define and parse model
 base_model = Drone2D()
 model = parse_model(base_model)
