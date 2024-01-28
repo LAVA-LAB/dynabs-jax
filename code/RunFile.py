@@ -13,7 +13,7 @@ base_model = Drone2D()
 model = parse_model(base_model)
 
 mode = ['fori_loop', 'vmap', 'python'][0]
-NUM_SAMPLES = 100
+NUM_SAMPLES = 10000
 key = jax.random.PRNGKey(0)
 
 partition = RectangularPartition(number_per_dim=model.partition['number_per_dim'],

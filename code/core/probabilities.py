@@ -7,11 +7,11 @@ import cdd
 from tqdm import tqdm
 
 from .polytope import num_points_in_polytope
+vmap_num_points_in_polytope = jax.jit(jax.vmap(num_points_in_polytope, in_axes=(0, 0, None), out_axes=0))
 
 @jax.jit
-def compute_intervals_single_action(samples, As, bs):
+def compute_contained_for_single_action(samples, As, bs):
 
-    vmap_num_points_in_polytope = jax.vmap(num_points_in_polytope, in_axes=(0, 0, None), out_axes=0)
     num_samples_per_region = vmap_num_points_in_polytope(As, bs, samples)
 
     return num_samples_per_region
@@ -29,8 +29,8 @@ def compute_num_contained_all_actions(partition, actions, enabled_actions, noise
 
             succ_samples = d + noise_samples
 
-            num_samples_per_region[i] = compute_intervals_single_action(succ_samples, partition.regions['A'],
-                                                                        partition.regions['b'])
+            num_samples_per_region[i] = compute_contained_for_single_action(succ_samples, partition.regions['A'],
+                                                                            partition.regions['b'])
 
     print(f'- Number of samples for each transition computed (took {(time.time()-t):.3f} sec.)')
 

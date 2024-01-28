@@ -20,9 +20,9 @@ def any_points_in_polytope(A, b, points):
     bools = (jnp.matmul(A, points.T).T <= b)
 
     # A point is contained if every constraint is satisfied
-    points_contained = jnp.all(bools, axis=1)
+    points_contained = jnp.min(bools, axis=1) #jnp.all(bools, axis=1)
 
-    return jnp.any(points_contained)
+    return jnp.max(bools, axis=1) #jnp.any(points_contained)
 
 def all_points_in_polytope(A, b, points):
     ''' Check if polytope defined by Ax <= b contains given list of points '''
@@ -31,9 +31,10 @@ def all_points_in_polytope(A, b, points):
     bools = (jnp.matmul(A, points.T).T <= b)
 
     # A point is contained if every constraint is satisfied
-    points_contained = jnp.all(bools, axis=1)
+    # points_contained = jnp.all(bools, axis=1)
+    # return jnp.all(points_contained)
 
-    return jnp.all(points_contained)
+    return jnp.min(bools)
 
 def num_points_in_polytope(A, b, points):
     ''' Check if polytope defined by Ax <= b contains given list of points '''
@@ -42,6 +43,6 @@ def num_points_in_polytope(A, b, points):
     bools = (jnp.matmul(A, points.T).T <= b)
 
     # A point is contained if every constraint is satisfied
-    points_contained = jnp.all(bools, axis=1)
+    points_contained = jnp.min(bools, axis=1) #jnp.all(bools, axis=1)
 
     return jnp.sum(points_contained)
