@@ -32,4 +32,5 @@ enabled_actions = compute_enabled_actions(jnp.array(actions.backreach['A']),
 
 samples = sample_noise(model, key, NUM_SAMPLES)
 
-num_samples_per_region = compute_num_contained_all_actions(partition, actions, enabled_actions, samples)
+num_samples_per_region = compute_num_contained_all_actions(partition, actions, enabled_actions, samples,
+                                                           mode = 'fori_loop')

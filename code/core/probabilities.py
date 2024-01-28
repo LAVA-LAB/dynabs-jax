@@ -16,21 +16,39 @@ def compute_contained_for_single_action(samples, As, bs):
 
     return num_samples_per_region
 
-def compute_num_contained_all_actions(partition, actions, enabled_actions, noise_samples):
+def compute_num_contained_all_actions(partition, actions, enabled_actions, noise_samples, mode):
     print('Compute transition probability intervals...')
-
-    num_samples_per_region = np.zeros((len(actions.backreach['target_points']), len(partition.regions['idxs'])))
-
     t = time.time()
 
-    for i,d in tqdm(enumerate(actions.backreach['target_points'])):
-        # Check if this action is enabled anywhere
-        if jnp.sum(enabled_actions[:,i]) > 0:
+    @jax.jit
+    def loop_body(i, val):
+        As, bs, d, noise_samples, out = val
 
-            succ_samples = d + noise_samples
+        succ_samples = d[i] + noise_samples
+        out_curr = compute_contained_for_single_action(succ_samples, As, bs)
 
-            num_samples_per_region[i] = compute_contained_for_single_action(succ_samples, partition.regions['A'],
-                                                                            partition.regions['b'])
+        out = out.at[i].set(out_curr)
+        return (As, bs, d, noise_samples, out)
+
+    if mode == 'fori_loop':
+
+        num_samples_per_region = np.zeros((len(actions.backreach['target_points']), len(partition.regions['idxs'])))
+        val = (partition.regions['A'], partition.regions['b'], actions.backreach['target_points'],
+               noise_samples, num_samples_per_region)
+        val = jax.lax.fori_loop(0, len(actions.backreach['target_points']), loop_body, val)
+        (_, _, _, _, num_samples_per_region) = val
+
+    else:
+
+        num_samples_per_region = np.zeros((len(actions.backreach['target_points']), len(partition.regions['idxs'])))
+
+        for i, d in tqdm(enumerate(actions.backreach['target_points'])):
+            # Check if this action is enabled anywhere
+            if jnp.sum(enabled_actions[:, i]) > 0:
+                succ_samples = d + noise_samples
+
+                num_samples_per_region[i] = compute_contained_for_single_action(succ_samples, partition.regions['A'],
+                                                                                partition.regions['b'])
 
     print(f'- Number of samples for each transition computed (took {(time.time()-t):.3f} sec.)')
 
