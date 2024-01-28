@@ -22,7 +22,7 @@ def any_points_in_polytope(A, b, points):
     # A point is contained if every constraint is satisfied
     points_contained = jnp.min(bools, axis=1) #jnp.all(bools, axis=1)
 
-    return jnp.max(bools, axis=1) #jnp.any(points_contained)
+    return jnp.max(bools) #jnp.any(points_contained)
 
 def all_points_in_polytope(A, b, points):
     ''' Check if polytope defined by Ax <= b contains given list of points '''
