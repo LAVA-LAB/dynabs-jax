@@ -50,6 +50,7 @@ class RectangularTarget(object):
         self.backreach = {
             'idxs': np.arange(len(vertices)),
             'vertices': vertices,
+            'target_points': target_points,
             'A': np.array(A),
             'b': np.array(b)
         }
