@@ -41,7 +41,7 @@ NUM_SAMPLES = 10000
 samples = sample_noise(model, key, NUM_SAMPLES)
 
 num_samples_per_region3 = compute_num_contained_all_actions(partition, actions.backreach['target_points'],
-                                                            samples, mode = 'vmap', batch_size = 4)
+                                                            samples, mode = 'vmap', batch_size = 2)
 
 num_samples_per_region = compute_num_contained_all_actions(partition, actions.backreach['target_points'],
                                                            samples, mode = 'fori_loop')
