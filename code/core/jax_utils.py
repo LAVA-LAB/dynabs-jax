@@ -1,23 +1,17 @@
 import jax
 import jax.numpy as jnp
+import numpy as np
 
+def create_batches(data_length, batch_size):
+    '''
+    Create batches for the given data and batch size. Returns the start and end indices to iterate over.
+    :param data:
+    :param batch_size:
+    :return:
+    '''
 
-def batched_forward_pass(apply_fn, batch_size, ):
+    num_batches = np.ceil(data_length / batch_size).astype(int)
+    starts = np.arange(num_batches) * batch_size
+    ends = np.minimum(starts + batch_size, data_length)
 
-
-
-    if len(samples) <= batch_size:
-        # If the number of samples is below the maximum batch size, then just do one pass
-        return jit(apply_fn)(jax.lax.stop_gradient(params), jax.lax.stop_gradient(samples))
-
-    else:
-        # Otherwise, split into batches
-        output = np.zeros((len(samples), out_dim))
-        num_batches = np.ceil(len(samples) / batch_size).astype(int)
-        starts = np.arange(num_batches) * batch_size
-        ends = np.minimum(starts + batch_size, len(samples))
-
-        for (i, j) in zip(starts, ends):
-            output[i:j] = jit(apply_fn)(jax.lax.stop_gradient(params), jax.lax.stop_gradient(samples[i:j]))
-
-        return output
+    return starts, ends

@@ -138,6 +138,7 @@ class RectangularPartition(object):
             'idxs': goal_regions_idxs,
             'centers': goal_regions_centers
         }
+        print(f"-- Number of goal regions: {len(self.goal['idxs'])}")
 
         t = time.time()
         # Determine critical regions by sampling within critical regions and check if any points are contained
@@ -188,6 +189,7 @@ class RectangularPartition(object):
             'idxs': critical_regions_idxs,
             'centers': critical_regions_centers
         }
+        print(f"-- Number of goal regions: {len(self.critical['idxs'])}")
 
         print('')
         return

@@ -16,7 +16,7 @@ def backward_reach(target, A_inv, B, Q_flat, input_vertices):
 # Vectorized function over different sets of points
 vmap_backward_reach = jax.vmap(backward_reach, in_axes=(0, None, None, None, None), out_axes=0)
 
-def compute_polytope_halfsaces(vertices):
+def compute_polytope_halfspaces(vertices):
     '''Compute the halfspace representation (H-rep) of a polytope.'''
     t = np.ones((vertices.shape[0], 1))  # first column is 1 for vertices
     tV = np.hstack([t, vertices])
@@ -43,8 +43,8 @@ class RectangularTarget(object):
         t = time.time()
         A = [[]] * len(vertices)
         b = [[]] * len(vertices)
-        for i,vertices in enumerate(vertices):
-            A[i], b[i] = compute_polytope_halfsaces(vertices)
+        for i,verts in enumerate(vertices):
+            A[i], b[i] = compute_polytope_halfspaces(verts)
         print(f'- Halfspace representations computed (took {(time.time() - t):.3f} sec.)')
 
         self.backreach = {
@@ -58,10 +58,31 @@ class RectangularTarget(object):
         print('')
         return
 
+    def test_backwardset(self, idx, model):
+        '''
+        Validate the correctness of the backward reachable set for the given index.
+        :param idx:
+        :param model:
+        :return:
+        '''
+
+        for i,(x,u) in enumerate(zip(self.backreach['vertices'][idx], model.uVertices)):
+            point = model.A @ x + model.B @ u + model.Q_flat
+
+            assert np.all(np.isclose(point, self.target_points[idx])), \
+                f"""Test for backward reachable set {idx} failed for vertex {i}:
+                - Target point: {self.target_points[idx]}
+                - Forward dynamics from vertex results in: {point}"""
+
+        return
+
 # Vectorized function over different polytopes
 from .polytope import all_points_in_polytope
 vmap_all_points_in_polytope = jax.jit(jax.vmap(all_points_in_polytope, in_axes=(0, 0, None), out_axes=0))
 vmap_compute_actions_enabled_in_region = jax.jit(jax.vmap(vmap_all_points_in_polytope, in_axes=(None, None, 0), out_axes=0))
+
+vmap_all_points_in_polytope2 = jax.jit(jax.vmap(all_points_in_polytope, in_axes=(None, None, 0), out_axes=0))
+vmap_compute_actions_enabled_in_region2 = jax.jit(jax.vmap(vmap_all_points_in_polytope2, in_axes=(0, 0, None), out_axes=0))
 
 def compute_enabled_actions(As, bs, region_vertices, mode = 'fori_loop'):
     print('Compute subset of enabled actions in each partition element...')
