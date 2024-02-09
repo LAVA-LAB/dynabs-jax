@@ -91,6 +91,11 @@ class RectangularPartition(object):
 
         # Define the grid centers
         centers = define_grid_jax(lb_center, ub_center, number_per_dim)
+
+        # TODO: Remove this
+        from .utils import lexsort4d
+        centers = lexsort4d(centers)
+
         region_idxs = np.arange(len(centers))
         lower_bounds = centers - self.cell_width / 2
         upper_bounds = centers + self.cell_width / 2

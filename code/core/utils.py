@@ -15,3 +15,14 @@ def create_batches(data_length, batch_size):
     ends = np.minimum(starts + batch_size, data_length)
 
     return starts, ends
+
+def lexsort4d(array):
+
+    idxs = np.lexsort((
+        array[:,3],
+        array[:,2],
+        array[:,1],
+        array[:,0]
+    ))
+
+    return array[idxs]
