@@ -1,6 +1,7 @@
 import jax
 import jax.numpy as jnp
 import numpy as np
+import pydot
 
 def create_batches(data_length, batch_size):
     '''
@@ -26,3 +27,4 @@ def lexsort4d(array):
     ))
 
     return array[idxs]
+

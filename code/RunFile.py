@@ -67,11 +67,15 @@ P_full, P_absorbing = samples_to_intervals(NUM_SAMPLES,
 # %%
 
 import stormpy
-from core.imdp import imdp_test2
-
-matrix, imdp, result = imdp_test2()
-stormpy.export_to_drn(imdp, 'out_test.drn')
-print('Result:', result)
+# import pydot
+# from core.imdp import imdp_test2
+#
+# matrix, imdp, results = imdp_test2()
+# stormpy.export_to_drn(imdp, 'out_test.drn')
+#
+# dot = imdp.to_dot()
+# graph = pydot.graph_from_dot_data(dot)
+# graph[0].write_png('graph2.png')
 
 # %%
 
@@ -87,14 +91,5 @@ builder = Builder(states=partition.regions['idxs'],
 stormpy.export_to_drn(builder.imdp, 'out.drn')
 
 builder.compute_reach_avoid()
-i = 667
-print(f'Result at state {partition.regions["centers"][i]} is: {builder.result_robust.at(i)}')
-
-# %%
-
-s = 786
-a = 0
-
-for transition in builder.imdp.states[s].actions[a].transitions:
-    print("From state {} by action {}, with probability {}, go to state {}".format(s, a, transition.value(),
-                                                                                   transition.column))
+for i in range(0,100):
+    print(f'Result at state {partition.regions["centers"][i]} is: {builder.result_robust.at(i)}')

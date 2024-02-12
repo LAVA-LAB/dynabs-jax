@@ -38,7 +38,7 @@ class Drone2D(object):
 
         # Covariance of the process noise
         self.noise = dict()
-        self.noise['w_cov'] = np.eye(np.size(self.A, 1)) * 0.15 *0.1
+        self.noise['w_cov'] = np.eye(np.size(self.A, 1)) * 0.15
 
         return
 

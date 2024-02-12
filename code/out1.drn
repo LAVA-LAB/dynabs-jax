@@ -1,0 +1,25 @@
+// Exported by storm
+// Original model type: MDP
+@type: MDP
+@parameters
+
+@reward_models
+
+@nr_states
+3
+@nr_choices
+4
+@model
+state 0 goal
+	action 0
+		0 : [1, 1]
+state 1
+	action 0
+		1 : [1, 1]
+state 2 init
+	action 0
+		0 : [0.3, 0.3]
+		1 : [0.7, 0.7]
+	action 1
+		0 : [0.3, 0.3]
+		1 : [0.7, 0.7]

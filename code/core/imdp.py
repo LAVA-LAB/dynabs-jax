@@ -69,35 +69,46 @@ def imdp_test2():
                                                        has_custom_row_grouping=True, row_groups=0)
 
     builder.new_row_group(0)
-    builder.add_next_value(0, 1, pycarl.Interval(0.995831, 1))
-    builder.add_next_value(0, 2, pycarl.Interval(0, 0.00416917))
+    builder.add_next_value(0, 2, pycarl.Interval(0.9, 1))
+    builder.add_next_value(0, 3, pycarl.Interval(0, 0.2))
+    builder.add_next_value(1, 2, pycarl.Interval(0.1, 1))
+    builder.add_next_value(1, 5, pycarl.Interval(0, 0.2))
 
-    builder.add_next_value(1, 1, pycarl.Interval(0.995831, 1))
-    builder.add_next_value(1, 2, pycarl.Interval(0, 0.00416917))
-
-    builder.add_next_value(2, 1, pycarl.Interval(0.995831, 1))
-    builder.add_next_value(2, 2, pycarl.Interval(0, 0.00416917))
-
-    builder.add_next_value(3, 1, pycarl.Interval(0.995831, 1))
-    builder.add_next_value(3, 2, pycarl.Interval(0, 0.00416917))
+    builder.new_row_group(2)
+    builder.add_next_value(2, 2, pycarl.Interval(0.9, 1))
+    builder.add_next_value(2, 3, pycarl.Interval(0, 0.2))
+    builder.add_next_value(3, 2, pycarl.Interval(0.9, 1))
+    builder.add_next_value(3, 3, pycarl.Interval(0, 0.2))
 
     builder.new_row_group(4)
-    builder.add_next_value(4, 1, pycarl.Interval(1, 1))
+    builder.add_next_value(4, 2, pycarl.Interval(1, 1))
 
     builder.new_row_group(5)
-    builder.add_next_value(5, 2, pycarl.Interval(1, 1))
+    builder.add_next_value(5, 3, pycarl.Interval(1, 1))
+
+    builder.new_row_group(6)
+    builder.add_next_value(6, 2, pycarl.Interval(0.7, 1))
+    builder.add_next_value(6, 3, pycarl.Interval(0, 0.4))
+    builder.add_next_value(7, 2, pycarl.Interval(0.7, 1))
+    builder.add_next_value(7, 3, pycarl.Interval(0, 0.4))
+
+    builder.new_row_group(8)
+    builder.add_next_value(8, 2, pycarl.Interval(0.5, 0.7))
+    builder.add_next_value(8, 5, pycarl.Interval(0.2, 1))
 
     matrix = builder.build()
     logging.debug(matrix)
 
+    print(matrix)
+
     # Create state labeling
-    state_labeling = stormpy.storage.StateLabeling(3)
+    state_labeling = stormpy.storage.StateLabeling(6)
 
     state_labeling.add_label('init')
-    state_labeling.add_label_to_state('init', 0)
+    state_labeling.add_label_to_state('init', 4)
 
     state_labeling.add_label('goal')
-    state_labeling.add_label_to_state('goal', 1)
+    state_labeling.add_label_to_state('goal', 2)
 
     components = stormpy.SparseIntervalModelComponents(transition_matrix=matrix, state_labeling=state_labeling)
     imdp = stormpy.storage.SparseIntervalMdp(components)
@@ -106,15 +117,16 @@ def imdp_test2():
     env = stormpy.Environment()
     env.solver_environment.minmax_solver_environment.method = stormpy.MinMaxMethod.value_iteration
 
-    task = stormpy.CheckTask(prop.raw_formula, only_initial_states=True)
+    task = stormpy.CheckTask(prop.raw_formula, only_initial_states=False)
     task.set_produce_schedulers()
     task.set_robust_uncertainty(True)
 
     results = stormpy.check_interval_mdp(imdp, task, env)
 
-    result_init = results.at(0)
+    for s in range(6):
+        print(f'Result at {s} = {results.at(s)}')
 
-    return matrix, imdp, result_init
+    return matrix, imdp, results
 
 class Builder:
     """
@@ -127,14 +139,10 @@ class Builder:
                                                            has_custom_row_grouping=True, row_groups=0)
 
         # Set some constants
-        self.goal_state = np.max(states) + 1
-        self.critical_state = np.max(states) + 2
-        self.absorbing_state = np.max(states) + 3
+        self.absorbing_state = np.max(states) + 1
 
         # Predefine the pycarl intervals
         self.intervals = {}
-        # self.intervals_goal = {}
-        # self.intervals_critical = {}
         self.intervals_absorbing = {}
         for a in actions:
             self.intervals[a] = {}
@@ -145,8 +153,6 @@ class Builder:
                     self.intervals[a][ss] = pycarl.Interval(P_full[a, ss, 0], P_full[a, ss, 1])
 
             # Add intervals for other states
-            # self.intervals_goal[a] = pycarl.Interval(P_goal[a, 0], P_goal[a, 1])
-            # self.intervals_critical[a] = pycarl.Interval(P_critical[a, 0], P_critical[a, 1])
             self.intervals_absorbing[a] = pycarl.Interval(P_absorbing[a, 0], P_absorbing[a, 1])
 
         row = 0
@@ -163,7 +169,7 @@ class Builder:
 
             # If no actions are enabled at all, add a deterministic transition to the absorbing state
             if len(enabled_in_s) == 0 or s in critical_regions or s in goal_regions:
-                self.builder.add_next_value(row, s, pycarl.Interval(1, 1))
+                self.builder.add_next_value(row, self.absorbing_state, pycarl.Interval(1, 1))
                 row += 1
 
             else:
@@ -176,14 +182,12 @@ class Builder:
                         self.builder.add_next_value(row, ss, intv)
 
                     # Add transitions to other states
-                    # self.builder.add_next_value(row, self.goal_state, self.intervals_goal[a])
-                    # self.builder.add_next_value(row, self.critical_state, self.intervals_critical[a])
                     self.builder.add_next_value(row, self.absorbing_state, self.intervals_absorbing[a])
 
                     # For each (s,a) pair, increment the row count by one
                     row += 1
 
-        for ss in [self.goal_state, self.critical_state, self.absorbing_state]:
+        for ss in [self.absorbing_state]:
             self.builder.new_row_group(row)
             self.builder.add_next_value(row, ss, pycarl.Interval(1, 1))
             row += 1
@@ -209,13 +213,11 @@ class Builder:
 
         # Add critical (unsafe) states
         state_labeling.add_label('critical')
-        state_labeling.add_label_to_state('critical', self.critical_state)
         for s in critical_regions:
             state_labeling.add_label_to_state('critical', s)
 
         # Add goal states
         state_labeling.add_label('goal')
-        state_labeling.add_label_to_state('goal', self.goal_state)
         for s in goal_regions:
             state_labeling.add_label_to_state('goal', s)
 
@@ -229,7 +231,7 @@ class Builder:
         env.solver_environment.minmax_solver_environment.method = stormpy.MinMaxMethod.value_iteration
 
         # Compute reach-avoid probability
-        task = stormpy.CheckTask(prop.raw_formula, only_initial_states=True)
+        task = stormpy.CheckTask(prop.raw_formula, only_initial_states=False)
         task.set_produce_schedulers()
         task.set_robust_uncertainty(True)
         self.result_robust = stormpy.check_interval_mdp(self.imdp, task, env)
