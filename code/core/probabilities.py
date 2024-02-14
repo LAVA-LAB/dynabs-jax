@@ -24,8 +24,11 @@ def compute_contained_for_single_action(d, noise_samples, As, bs):
     return num_samples_per_region
 
 
+gpu_device = jax.devices('gpu')[0]
+cpu_device = jax.devices('cpu')[0]
+
 vmap_compute_contained_for_single_action = jax.jit(jax.vmap(compute_contained_for_single_action,
-                                                            in_axes=(0, None, None, None), out_axes=0))
+                                                            in_axes=(0, None, None, None), out_axes=0), device=cpu_device)
 
 
 def compute_scenario_interval_table(filepath, num_samples, confidence_level):
