@@ -33,7 +33,7 @@ partition = RectangularPartition(number_per_dim=model.partition['number_per_dim'
                                  partition_boundary=model.partition['boundary'],
                                  goal_regions=model.goal,
                                  critical_regions=model.critical,
-                                 mode = args.mode)
+                                 mode = 'fori_loop')
 
 actions = RectangularTarget(target_points=partition.regions['centers'],
                             model=model)
