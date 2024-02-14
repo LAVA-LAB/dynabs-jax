@@ -11,8 +11,8 @@ def create_batches(data_length, batch_size):
     '''
 
     num_batches = np.ceil(data_length / batch_size).astype(int)
-    starts = np.array(np.arange(num_batches) * batch_size, dtype=int)
-    ends = np.array(np.minimum(starts + batch_size, data_length), dtype=int)
+    starts = (np.arange(num_batches) * batch_size).astype(int)
+    ends = (np.minimum(starts + batch_size, data_length)).astype(int)
 
     return starts, ends
 
