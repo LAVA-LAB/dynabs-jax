@@ -12,7 +12,6 @@ from core.actions import RectangularTarget, compute_enabled_actions
 from core.probabilities import sample_noise, compute_num_contained_all_actions, compute_scenario_interval_table, \
     samples_to_intervals
 from core.imdp import BuilderStorm, BuilderPrism
-import stormpy
 
 args = parse_arguments()
 np.random.seed(args.seed)
@@ -61,34 +60,39 @@ P_full, P_absorbing = samples_to_intervals(args.num_samples,
 
 # %%
 
-# Build interval MDP via StormPy
-t = time.time()
-builderS = BuilderStorm(states=partition.regions['idxs'],
-                        goal_regions=partition.goal['idxs'],
-                        critical_regions=partition.critical['idxs'],
-                        actions=actions.backreach['idxs'],
-                        enabled_actions=enabled_actions,
-                        P_full=P_full,
-                        P_absorbing=P_absorbing)
-# stormpy.export_to_drn(builderS.imdp, 'out.drn')
-print(f'- Build with storm took: {(time.time() - t):.3f} sec.')
+if args.checker == 'storm' or args.debug:
 
-t = time.time()
-builderS.compute_reach_avoid()
-print(f'- Verify with storm took: {(time.time() - t):.3f} sec.')
+    # Build interval MDP via StormPy
+    t = time.time()
+    builderS = BuilderStorm(states=partition.regions['idxs'],
+                            goal_regions=partition.goal['idxs'],
+                            critical_regions=partition.critical['idxs'],
+                            actions=actions.backreach['idxs'],
+                            enabled_actions=enabled_actions,
+                            P_full=P_full,
+                            P_absorbing=P_absorbing)
+    # stormpy.export_to_drn(builderS.imdp, 'out.drn')
+    print(f'- Build with storm took: {(time.time() - t):.3f} sec.')
 
-t = time.time()
-builderP = BuilderPrism(states=partition.regions['idxs'],
-                        goal_regions=partition.goal['idxs'],
-                        critical_regions=partition.critical['idxs'],
-                        actions=actions.backreach['idxs'],
-                        enabled_actions=enabled_actions,
-                        P_full=P_full,
-                        P_absorbing=P_absorbing)
-print(f'- Build with prism took: {(time.time() - t):.3f} sec.')
+    t = time.time()
+    builderS.compute_reach_avoid()
+    print(f'- Verify with storm took: {(time.time() - t):.3f} sec.')
 
-t = time.time()
-builderP.compute_reach_avoid(args.prism_dir)
-print(f'- Build with prism took: {(time.time() - t):.3f} sec.')
+if args.checker == 'prism' or args.debug:
 
-assert np.all(np.abs(builderS.results - builderP.results)) < 1e-4
+    t = time.time()
+    builderP = BuilderPrism(states=partition.regions['idxs'],
+                            goal_regions=partition.goal['idxs'],
+                            critical_regions=partition.critical['idxs'],
+                            actions=actions.backreach['idxs'],
+                            enabled_actions=enabled_actions,
+                            P_full=P_full,
+                            P_absorbing=P_absorbing)
+    print(f'- Build with prism took: {(time.time() - t):.3f} sec.')
+
+    t = time.time()
+    builderP.compute_reach_avoid(args.prism_dir)
+    print(f'- Build with prism took: {(time.time() - t):.3f} sec.')
+
+if args.debug:
+    assert np.all(np.abs(builderS.results - builderP.results)) < 1e-4

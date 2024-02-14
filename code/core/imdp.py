@@ -1,6 +1,4 @@
 import logging
-import pycarl
-import stormpy
 import numpy as np
 import pandas as pd
 from .utils import writeFile
@@ -10,6 +8,9 @@ class BuilderStorm:
     """
     Construct iMDP
     """
+
+    import pycarl
+    import stormpy
 
     def __init__(self, states, goal_regions, critical_regions, actions, enabled_actions, P_full, P_absorbing):
 
