@@ -82,6 +82,7 @@ class RectangularPartition(object):
     def __init__(self, number_per_dim, partition_boundary, goal_regions, critical_regions, mode = 'fori_loop'):
 
         print('Define rectangular partition...')
+        t_total = time.time()
 
         t = time.time()
         # From the partition boundary, determine where the first grid centers are placed
@@ -196,5 +197,6 @@ class RectangularPartition(object):
         }
         print(f"-- Number of goal regions: {len(self.critical['idxs'])}")
 
+        print(f'Partitioning took {(time.time() - t_total):.3f} sec.')
         print('')
         return

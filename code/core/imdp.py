@@ -2,133 +2,11 @@ import logging
 import pycarl
 import stormpy
 import numpy as np
+import pandas as pd
+from .utils import writeFile
 
-def imdp_test():
-    """
-    Construct a hardcoded iMDP to test storm(py)
-    """
+class BuilderStorm:
 
-    builder = stormpy.IntervalSparseMatrixBuilder(rows=0, columns=0, entries=0, force_dimensions=False,
-                                                       has_custom_row_grouping=True, row_groups=0)
-
-    builder.new_row_group(0)
-    builder.add_next_value(0, 1, pycarl.Interval(0.5, 0.7))
-    builder.add_next_value(0, 4, pycarl.Interval(0.35, 0.47))
-
-    builder.new_row_group(1)
-    builder.add_next_value(1, 0, pycarl.Interval(0.1, 0.4))
-    builder.add_next_value(1, 2, pycarl.Interval(0.2, 0.3))
-    builder.add_next_value(1, 3, pycarl.Interval(0.5, 0.7))
-
-    builder.new_row_group(2)
-    builder.add_next_value(2, 2, pycarl.Interval(1, 1))
-
-    builder.new_row_group(3)
-    builder.add_next_value(3, 2, pycarl.Interval(0.6, 0.7))
-    builder.add_next_value(3, 4, pycarl.Interval(0.3, 0.5))
-    builder.add_next_value(4, 0, pycarl.Interval(1, 1))
-
-    builder.new_row_group(5)
-    builder.add_next_value(5, 4, pycarl.Interval(1, 1))
-
-    matrix = builder.build()
-    logging.debug(matrix)
-
-    # Create state labeling
-    state_labeling = stormpy.storage.StateLabeling(5)
-
-    state_labeling.add_label('init')
-    state_labeling.add_label_to_state('init', 0)
-
-    state_labeling.add_label('goal')
-    state_labeling.add_label_to_state('goal', 2)
-
-    components = stormpy.SparseIntervalModelComponents(transition_matrix=matrix, state_labeling=state_labeling)
-    imdp = stormpy.storage.SparseIntervalMdp(components)
-
-    prop = stormpy.parse_properties('Pmax=? [F "goal"]')[0]
-    env = stormpy.Environment()
-    env.solver_environment.minmax_solver_environment.method = stormpy.MinMaxMethod.value_iteration
-
-    task = stormpy.CheckTask(prop.raw_formula, only_initial_states=True)
-    task.set_produce_schedulers()
-    task.set_robust_uncertainty(True)
-
-    results = stormpy.check_interval_mdp(imdp, task, env)
-
-    result_init = results.at(0)
-
-    return matrix, imdp, result_init
-
-def imdp_test2():
-    """
-    Construct a hardcoded iMDP to test storm(py)
-    """
-
-    builder = stormpy.IntervalSparseMatrixBuilder(rows=0, columns=0, entries=0, force_dimensions=False,
-                                                       has_custom_row_grouping=True, row_groups=0)
-
-    builder.new_row_group(0)
-    builder.add_next_value(0, 2, pycarl.Interval(0.9, 1))
-    builder.add_next_value(0, 3, pycarl.Interval(0, 0.2))
-    builder.add_next_value(1, 2, pycarl.Interval(0.1, 1))
-    builder.add_next_value(1, 5, pycarl.Interval(0, 0.2))
-
-    builder.new_row_group(2)
-    builder.add_next_value(2, 2, pycarl.Interval(0.9, 1))
-    builder.add_next_value(2, 3, pycarl.Interval(0, 0.2))
-    builder.add_next_value(3, 2, pycarl.Interval(0.9, 1))
-    builder.add_next_value(3, 3, pycarl.Interval(0, 0.2))
-
-    builder.new_row_group(4)
-    builder.add_next_value(4, 2, pycarl.Interval(1, 1))
-
-    builder.new_row_group(5)
-    builder.add_next_value(5, 3, pycarl.Interval(1, 1))
-
-    builder.new_row_group(6)
-    builder.add_next_value(6, 2, pycarl.Interval(0.7, 1))
-    builder.add_next_value(6, 3, pycarl.Interval(0, 0.4))
-    builder.add_next_value(7, 2, pycarl.Interval(0.7, 1))
-    builder.add_next_value(7, 3, pycarl.Interval(0, 0.4))
-
-    builder.new_row_group(8)
-    builder.add_next_value(8, 2, pycarl.Interval(0.5, 0.7))
-    builder.add_next_value(8, 5, pycarl.Interval(0.2, 1))
-
-    matrix = builder.build()
-    logging.debug(matrix)
-
-    print(matrix)
-
-    # Create state labeling
-    state_labeling = stormpy.storage.StateLabeling(6)
-
-    state_labeling.add_label('init')
-    state_labeling.add_label_to_state('init', 4)
-
-    state_labeling.add_label('goal')
-    state_labeling.add_label_to_state('goal', 2)
-
-    components = stormpy.SparseIntervalModelComponents(transition_matrix=matrix, state_labeling=state_labeling)
-    imdp = stormpy.storage.SparseIntervalMdp(components)
-
-    prop = stormpy.parse_properties('Pmax=? [F "goal"]')[0]
-    env = stormpy.Environment()
-    env.solver_environment.minmax_solver_environment.method = stormpy.MinMaxMethod.value_iteration
-
-    task = stormpy.CheckTask(prop.raw_formula, only_initial_states=False)
-    task.set_produce_schedulers()
-    task.set_robust_uncertainty(True)
-
-    results = stormpy.check_interval_mdp(imdp, task, env)
-
-    for s in range(6):
-        print(f'Result at {s} = {results.at(s)}')
-
-    return matrix, imdp, results
-
-class Builder:
     """
     Construct iMDP
     """
@@ -160,7 +38,6 @@ class Builder:
 
         # For all states
         for s in states:
-            print(f'- State {s}')
 
             # For each state, create a new row group
             self.builder.new_row_group(row)
@@ -234,9 +111,162 @@ class Builder:
         task = stormpy.CheckTask(prop.raw_formula, only_initial_states=False)
         task.set_produce_schedulers()
         task.set_robust_uncertainty(True)
-        self.result_robust = stormpy.check_interval_mdp(self.imdp, task, env)
+        result_generator = stormpy.check_interval_mdp(self.imdp, task, env)
 
-        # initial_state = self.imdp.initial_states[0]
+        self.results = np.array(result_generator.get_values())[:self.nr_states]
 
-        # self.prob_robust = result_robust.at(initial_state)
-        # self.scheduler_robust = result_robust.scheduler
+
+
+class BuilderPrism:
+
+    """
+    Construct iMDP
+    """
+
+    def __init__(self, states, goal_regions, critical_regions, actions, enabled_actions, P_full, P_absorbing):
+
+        self.out_dir = 'output/'
+        self.export_name = 'model'
+        self.out_path = str(self.out_dir + self.export_name)
+        self.PRISM_allfile = str(self.out_path + '.all')
+        head = 1
+
+        # Set some constants
+        self.absorbing_state = np.max(states) + 1
+
+        print(' --- Writing PRISM states file')
+
+        ### Write states file
+        PRISM_statefile = str(self.out_path + ".sta")
+
+        # Define tuple of state variables (for header in PRISM state file)
+        state_var_string = ['(s)']
+        state_file_content = [f'{str(i)}:({str(i)})' for i in states] + \
+                                [f'{str(self.absorbing_state)}:({str(self.absorbing_state)})']
+        state_file_string = '\n'.join(state_var_string + state_file_content)
+
+        # Write content to file
+        writeFile(PRISM_statefile, 'w', state_file_string)
+
+        print(' --- Writing PRISM label file')
+
+        ### Write label file
+        PRISM_labelfile = str(self.out_path + ".lab")
+
+        label_head = ['0="init" 1="deadlock" 2="reached" 3="critical"']
+        label_body = ['' for i in states]
+        for i in states:
+            substring = str(i) + ': 0'
+
+            # Check if region is a deadlock state
+            if len(enabled_actions[i]) == 0:
+                substring += ' 1'
+
+            # Check if region is in goal set
+            if i in goal_regions:
+                substring += ' 2'
+            elif i in critical_regions:
+                substring += ' 3'
+
+            label_body[i] = substring
+
+        label_body += [f'{str(self.absorbing_state)}: 1 3']
+        label_full = '\n'.join(label_head) + '\n' + '\n'.join(label_body)
+
+        # Write content to file
+        writeFile(PRISM_labelfile, 'w', label_full)
+
+        print(' --- Writing PRISM transition file')
+
+        ### Write transition file
+        PRISM_transitionfile = str(self.out_path + ".tra")
+
+        transition_file_list = ['' for i in states]
+        states_created = 0
+        nr_choices_absolute = 0
+        nr_transitions_absolute = 0
+
+        # For every state
+        for s in states:
+            states_created += 1
+            choice = 0
+
+            enabled_in_s = np.where(enabled_actions[s])[0]
+
+            # If no actions are enabled at all, add a deterministic transition to the absorbing state
+            if len(enabled_in_s) == 0 or s in critical_regions or s in goal_regions:
+
+                selfloop_prob = '[1.0,1.0]'
+                substring = [f'{s} {choice} {s} {selfloop_prob}']
+
+                nr_choices_absolute += 1
+                nr_transitions_absolute += 1
+
+            else:
+
+                substring = ['' for i in range(len(enabled_in_s))]
+
+                # For every enabled action
+                for a_idx,a in enumerate(enabled_in_s):
+
+                    # Define name of action
+                    actionLabel = "a_" + str(a)
+
+                    # Absorbing state transition
+                    str_main = [f'{s} {choice} {ss} [{P_full[a,ss,0]},{P_full[a,ss,1]}] {actionLabel}'
+                                for ss in states if P_full[a,ss,0] > 0]
+
+                    str_abs = [f'{s} {choice} {self.absorbing_state} [{P_absorbing[a, 0]},{P_absorbing[a, 1]}] {actionLabel}']
+
+                    # Increase choice counter
+                    choice += 1
+                    nr_choices_absolute += 1
+                    nr_transitions_absolute += len(str_main) + len(str_abs)
+
+                    # Join strings
+                    substring[a_idx] = '\n'.join(str_main + str_abs)
+
+            transition_file_list[s] = substring
+
+        # Add one choice and transition in the absorbing state
+        transition_file_list += [[f'{self.absorbing_state} 0 {self.absorbing_state} [1,1] loop']]
+
+        states_created += 1
+        nr_choices_absolute += 1
+        nr_transitions_absolute += 1
+
+        flatten = lambda t: [item for sublist in t
+                             for item in sublist]
+        transition_file_list = '\n'.join(flatten(transition_file_list))
+
+        # Header contains nr of states, choices, and transitions
+        header = str(states_created) + ' ' + str(nr_choices_absolute) + ' ' + str(nr_transitions_absolute) + '\n'
+
+        # Write content to file
+        writeFile(PRISM_transitionfile, 'w', header + transition_file_list)
+
+
+        ### Write specification file
+        self.specification = 'Pmaxmin=? [F "reached" ]'
+        specfile = str(self.out_path + ".pctl")
+
+        # Write specification file
+        writeFile(specfile, 'w', self.specification)
+
+        self.nr_states = states_created
+
+    def compute_reach_avoid(self, prism_folder, maximizing=True):
+
+        import subprocess  # Import to call prism via terminal command
+
+        policy_file = str(self.out_dir + 'policy.txt')
+        vector_file = str(self.out_dir + 'vector.csv')
+
+        options = ' -exportstrat "' + policy_file + '"' + \
+                  ' -exportvector "' + vector_file + '"'
+
+        command = f"{prism_folder} -javamaxmem 2g -importmodel '{self.PRISM_allfile}' -pf '{self.specification}' {options}"
+        subprocess.Popen(command, shell=True).wait()
+
+        values = pd.read_csv(vector_file, header=None).iloc[:self.nr_states].to_numpy()
+        self.results = values.flatten()

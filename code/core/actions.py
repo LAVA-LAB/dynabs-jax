@@ -34,6 +34,7 @@ class RectangularTarget(object):
 
     def __init__(self, target_points, model):
         print('Define target points and backward reachable sets...')
+        t_total = time.time()
 
         t = time.time()
         self.target_points = target_points
@@ -55,6 +56,7 @@ class RectangularTarget(object):
             'b': np.array(b)
         }
 
+        print(f'Defining actions took {(time.time() - t_total):.3f} sec.')
         print('')
         return
 
@@ -86,6 +88,7 @@ vmap_compute_actions_enabled_in_region2 = jax.jit(jax.vmap(vmap_all_points_in_po
 
 def compute_enabled_actions(As, bs, region_vertices, mode = 'fori_loop'):
     print('Compute subset of enabled actions in each partition element...')
+    t_total = time.time()
 
     @jax.jit
     def loop_body(i, val):
@@ -112,5 +115,7 @@ def compute_enabled_actions(As, bs, region_vertices, mode = 'fori_loop'):
 
     print(f'- Enabled actions computed (took {(time.time() - t):.3f} sec.)')
 
+    print(f'Total number of enabled actions: {np.sum(np.any(enabled_actions, axis=0))}')
+    print(f'Computing enabled actions took {(time.time() - t_total):.3f} sec.')
     print('')
     return np.array(enabled_actions)

@@ -28,3 +28,24 @@ def lexsort4d(array):
 
     return array[idxs]
 
+def writeFile(file, operation="w", content=[""]):
+    '''
+    Create a filehandle and store content in it.
+
+    Parameters
+    ----------
+    file : str
+        Filename to store the content in.
+    operation : str, optional
+        Type of operation to perform on the file. The default is "w".
+    content : list, optional
+        List of strings to store in the file. The default is [""].
+
+    Returns
+    -------
+    None.
+
+    '''
+    filehandle = open(file, operation)
+    filehandle.writelines(content)
+    filehandle.close()

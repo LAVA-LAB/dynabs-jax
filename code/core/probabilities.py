@@ -92,7 +92,7 @@ def compute_num_contained_all_actions(partition, target_points, noise_samples, m
                                                                             partition.regions['A'],
                                                                             partition.regions['b'])
 
-    print(f'- Number of samples for each transition computed (took {(time.time() - t):.3f} sec.)')
+    print(f'Evaluating samples took {(time.time() - t):.3f} sec.')
 
     return np.array(num_samples_per_region)
 
@@ -119,20 +119,19 @@ def samples_to_intervals(num_samples, num_samples_per_region, interval_table, go
     P_absorbing = interval_table[num_samples - num_samples_absorbing]
     P_full = interval_table[num_samples - num_samples_per_region]
 
-    P_full = np.round(P_full, 4)
-    P_absorbing = np.round(P_absorbing, 4)
+    P_full = np.maximum(1e-6, np.round(P_full, 4))
+    P_absorbing = np.maximum(1e-6, np.round(P_absorbing, 4))
+
+    # If the sample count was zero, force probability to zero
+    P_full[num_samples_per_region == 0] = 0
 
     # Perform checks on the transition probability intervals
-    '''
-    assert len(P_full) == len(P_goal) == len(P_critical) == len(P_absorbing)
+    assert len(P_full) == len(P_absorbing)
     assert 0 <= np.all(P_full) <= 1
-    assert 0 <= np.all(P_goal) <= 1
-    assert 0 <= np.all(P_critical) <= 1
     assert 0 <= np.all(P_absorbing) <= 1
     # Check if all lower bounds sum up to <= 1 and upper bounds to >= 1
-    assert np.all(np.sum(P_full[:,:,0], axis=1) + P_goal[:,0] + P_critical[:,0] + P_absorbing[:,0]) <= 1
-    assert np.all(np.sum(P_full[:, :, 1], axis=1) + P_goal[:, 1] + P_critical[:, 1] + P_absorbing[:, 1]) >= 1
-    '''
+    assert np.all(np.sum(P_full[:,:,0], axis=1) + P_absorbing[:,0]) <= 1
+    assert np.all(np.sum(P_full[:, :, 1], axis=1) + P_absorbing[:, 1]) >= 1
 
     # return P_full, P_goal, P_critical, P_absorbing
     return P_full, P_absorbing
