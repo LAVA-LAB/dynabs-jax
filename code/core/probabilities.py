@@ -49,7 +49,7 @@ def compute_scenario_interval_table(filepath, num_samples, confidence_level):
     return table
 
 
-def compute_num_contained_all_actions(partition, target_points, noise_samples, mode, batch_size=1e6):
+def compute_num_contained_all_actions(partition, target_points, noise_samples, mode, batch_size=1e3):
     print('Compute transition probability intervals...')
     t = time.time()
 
