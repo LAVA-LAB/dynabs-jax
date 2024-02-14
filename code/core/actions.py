@@ -114,8 +114,6 @@ def compute_enabled_actions(As, bs, region_vertices, mode = 'fori_loop', batch_s
         enabled_actions = np.full((len(region_vertices), len(As)), fill_value=False)
 
         for (i, j) in tqdm(zip(starts, ends)):
-            print(i,j)
-            print(region_vertices[i:j])
             vmap_compute_actions_enabled_in_region(As, bs, region_vertices[i:j])
             enabled_actions[i:j] = vmap_compute_actions_enabled_in_region(As, bs, region_vertices[i:j])
 
