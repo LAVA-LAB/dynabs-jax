@@ -47,7 +47,7 @@ enabled_actions = compute_enabled_actions(jnp.array(actions.backreach['A']),
 samples = sample_noise(model, args.jax_key, args.num_samples)
 
 num_samples_per_region = compute_num_contained_all_actions(partition, actions.backreach['target_points'],
-                                                           samples, mode = 'python', batch_size=100)
+                                                           samples, mode = args.mode, batch_size=100)
 
 table_filename = f'intervals_N={args.num_samples}_beta={args.confidence}.csv'
 interval_table = compute_scenario_interval_table(Path(str(args.root_dir), 'interval_tables', table_filename),
