@@ -34,17 +34,17 @@ partition = RectangularPartition(number_per_dim=model.partition['number_per_dim'
                                  goal_regions=model.goal,
                                  critical_regions=model.critical,
                                  mode = 'fori_loop')
-print(f"Number of states: {len(partition.regions['idxs'])}")
+print(f"\n(Number of states: {len(partition.regions['idxs'])})\n")
 
 actions = RectangularTarget(target_points=partition.regions['centers'],
                             model=model)
 actions.test_backwardset(idx=10, model=model)
-print(f"Number of actions: {len(actions.target_points)}")
+print(f"(Number of actions: {len(actions.target_points)})\n")
 
 enabled_actions = compute_enabled_actions(jnp.array(actions.backreach['A']),
                                           jnp.array(actions.backreach['b']),
                                           np.array(partition.regions['all_vertices']),
-                                          mode = 'fori_loop')
+                                          mode = 'python')
 
 samples = sample_noise(model, args.jax_key, args.num_samples)
 
