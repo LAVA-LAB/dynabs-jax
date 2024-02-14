@@ -245,6 +245,10 @@ class BuilderPrism:
         # Header contains nr of states, choices, and transitions
         header = str(states_created) + ' ' + str(nr_choices_absolute) + ' ' + str(nr_transitions_absolute) + '\n'
 
+        print('---- iMDP states:', states_created)
+        print('---- iMDP choices:', nr_choices_absolute)
+        print('---- iMDP transitions:', nr_transitions_absolute)
+
         # Write content to file
         writeFile(PRISM_transitionfile, 'w', header + transition_file_list)
 
