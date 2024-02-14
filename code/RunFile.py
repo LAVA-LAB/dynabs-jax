@@ -42,7 +42,7 @@ actions.test_backwardset(idx=10, model=model)
 enabled_actions = compute_enabled_actions(jnp.array(actions.backreach['A']),
                                           jnp.array(actions.backreach['b']),
                                           np.array(partition.regions['all_vertices']),
-                                          mode = 'vmap')
+                                          mode = 'fori_loop')
 
 samples = sample_noise(model, args.jax_key, args.num_samples)
 
