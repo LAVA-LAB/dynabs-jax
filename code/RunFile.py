@@ -34,7 +34,7 @@ partition = RectangularPartition(number_per_dim=model.partition['number_per_dim'
                                  goal_regions=model.goal,
                                  critical_regions=model.critical,
                                  mode = 'fori_loop')
-print(f"\n(Number of states: {len(partition.regions['idxs'])})\n")
+print(f"(Number of states: {len(partition.regions['idxs'])})\n")
 
 actions = RectangularTarget(target_points=partition.regions['centers'],
                             model=model)

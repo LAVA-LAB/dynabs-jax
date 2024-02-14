@@ -119,7 +119,9 @@ def compute_enabled_actions(As, bs, region_vertices, mode = 'fori_loop', batch_s
 
     else:
 
-        enabled_actions = np.array([vmap_all_points_in_polytope(As,bs,vertices) for vertices in region_vertices])
+        enabled_actions = np.full((len(region_vertices), len(As)), fill_value=False)
+        for i,vertices in enumerate(region_vertices):
+            enabled_actions[i] = vmap_all_points_in_polytope(As,bs,vertices)
 
     print(f'- Enabled actions computed (took {(time.time() - t):.3f} sec.)')
 
