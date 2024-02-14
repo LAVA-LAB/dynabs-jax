@@ -9,10 +9,10 @@ class BuilderStorm:
     Construct iMDP
     """
 
-    import pycarl
-    import stormpy
-
     def __init__(self, states, goal_regions, critical_regions, actions, enabled_actions, P_full, P_absorbing):
+
+        import pycarl
+        import stormpy
 
         self.builder = stormpy.IntervalSparseMatrixBuilder(rows=0, columns=0, entries=0, force_dimensions=False,
                                                            has_custom_row_grouping=True, row_groups=0)
@@ -103,6 +103,8 @@ class BuilderStorm:
         self.imdp = stormpy.storage.SparseIntervalMdp(components)
 
     def compute_reach_avoid(self, maximizing=True):
+
+        import stormpy
 
         prop = stormpy.parse_properties('P{}=? [F "goal"]'.format('max' if maximizing else 'min'))[0]
         env = stormpy.Environment()
