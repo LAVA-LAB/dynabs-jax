@@ -4,6 +4,7 @@ import jax
 import itertools
 import time
 import cdd
+from tqdm import tqdm
 
 from .utils import create_batches
 
