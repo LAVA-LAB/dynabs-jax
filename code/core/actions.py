@@ -89,7 +89,7 @@ vmap_compute_actions_enabled_in_region = jax.jit(jax.vmap(vmap_all_points_in_pol
 vmap_all_points_in_polytope2 = jax.jit(jax.vmap(all_points_in_polytope, in_axes=(None, None, 0), out_axes=0))
 vmap_compute_actions_enabled_in_region2 = jax.jit(jax.vmap(vmap_all_points_in_polytope2, in_axes=(0, 0, None), out_axes=0))
 
-def compute_enabled_actions(As, bs, region_vertices, mode = 'fori_loop', batch_size=1e3):
+def compute_enabled_actions(As, bs, region_vertices, mode = 'fori_loop', batch_size=1000):
     print('Compute subset of enabled actions in each partition element...')
     t_total = time.time()
 

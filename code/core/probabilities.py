@@ -24,11 +24,8 @@ def compute_contained_for_single_action(d, noise_samples, As, bs):
     return num_samples_per_region
 
 
-gpu_device = jax.devices('gpu')[0]
-cpu_device = jax.devices('cpu')[0]
-
 vmap_compute_contained_for_single_action = jax.jit(jax.vmap(compute_contained_for_single_action,
-                                                            in_axes=(0, None, None, None), out_axes=0), device=cpu_device)
+                                                            in_axes=(0, None, None, None), out_axes=0))
 
 
 def compute_scenario_interval_table(filepath, num_samples, confidence_level):
@@ -52,7 +49,7 @@ def compute_scenario_interval_table(filepath, num_samples, confidence_level):
     return table
 
 
-def compute_num_contained_all_actions(partition, target_points, noise_samples, mode, batch_size=1e3):
+def compute_num_contained_all_actions(partition, target_points, noise_samples, mode, batch_size=1000):
     print('Compute transition probability intervals...')
     t = time.time()
 
