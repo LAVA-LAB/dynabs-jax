@@ -51,8 +51,8 @@ class Drone2D(object):
         self.uMin = [-4, -4]
         self.uMax = [4, 4]
 
-        self.partition['boundary'] = np.array([[-7, -3, -7, -3], [7, 3, 7, 3]]) * 4
-        self.partition['number_per_dim'] = np.array([7, 4, 7, 4]) * 4
+        self.partition['boundary'] = np.array([[-7, -3, -7, -3], [7, 3, 7, 3]]) * 3
+        self.partition['number_per_dim'] = np.array([7, 4, 7, 4]) * 3
 
         self.goal = np.array([
             [[5, -3, 5, -3], [7, 3, 7, 3]]
