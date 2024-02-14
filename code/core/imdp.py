@@ -137,7 +137,7 @@ class BuilderPrism:
         # Set some constants
         self.absorbing_state = np.max(states) + 1
 
-        print(' --- Writing PRISM states file')
+        print('--- Writing PRISM states file')
 
         ### Write states file
         PRISM_statefile = str(self.out_path + ".sta")
@@ -151,7 +151,7 @@ class BuilderPrism:
         # Write content to file
         writeFile(PRISM_statefile, 'w', state_file_string)
 
-        print(' --- Writing PRISM label file')
+        print('--- Writing PRISM label file')
 
         ### Write label file
         PRISM_labelfile = str(self.out_path + ".lab")
@@ -179,7 +179,7 @@ class BuilderPrism:
         # Write content to file
         writeFile(PRISM_labelfile, 'w', label_full)
 
-        print(' --- Writing PRISM transition file')
+        print('--- Writing PRISM transition file')
 
         ### Write transition file
         PRISM_transitionfile = str(self.out_path + ".tra")

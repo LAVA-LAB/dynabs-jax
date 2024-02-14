@@ -94,7 +94,7 @@ if args.checker == 'prism' or args.debug:
 
     t = time.time()
     builderP.compute_reach_avoid(args.prism_dir)
-    print(f'- Build with prism took: {(time.time() - t):.3f} sec.')
+    print(f'- Verify with prism took: {(time.time() - t):.3f} sec.')
 
 if args.debug:
     assert np.all(np.abs(builderS.results - builderP.results)) < 1e-4
