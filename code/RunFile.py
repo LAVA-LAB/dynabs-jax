@@ -46,8 +46,6 @@ enabled_actions = compute_enabled_actions(jnp.array(actions.backreach['A']),
                                           np.array(partition.regions['all_vertices']),
                                           mode = 'python')
 
-assert False
-
 samples = sample_noise(model, args.jax_key, args.num_samples)
 
 num_samples_per_region = compute_num_contained_all_actions(partition, actions.backreach['target_points'],
