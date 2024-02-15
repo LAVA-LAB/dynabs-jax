@@ -4,7 +4,7 @@ import jax
 import os
 import time
 from pathlib import Path
-from benchmarks.Drone2D import Drone2D
+from benchmarks.Drone import Drone2D, Drone3D
 from core.options import parse_arguments
 from core.model import parse_model
 from core.partition import RectangularPartition
@@ -26,7 +26,7 @@ for key,val in vars(args).items():
     print(' - `'+str(key)+'`: '+str(val))
 
 # Define and parse model
-base_model = Drone2D()
+base_model = Drone3D()
 model = parse_model(base_model)
 
 partition = RectangularPartition(number_per_dim=model.partition['number_per_dim'],
