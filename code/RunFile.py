@@ -63,6 +63,7 @@ P_full, P_absorbing = samples_to_intervals(args.num_samples,
                                            partition.critical['bools'])
 
 # %%
+print('Create iMDP...')
 
 if args.checker == 'storm' or args.debug:
 
