@@ -119,6 +119,9 @@ def samples_to_intervals(num_samples, num_samples_per_region, interval_table, go
     # P_goal = interval_table[num_samples - num_samples_goal]
     # P_critical = interval_table[num_samples - num_samples_critical]
 
+    print('Table size:', interval_table.shape)
+    print('Min/max index:', np.min(num_samples_absorbing), np.max(num_samples_absorbing))
+
     P_absorbing = interval_table[num_samples - num_samples_absorbing]
     P_full = interval_table[num_samples - num_samples_per_region]
 
