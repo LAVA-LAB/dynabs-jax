@@ -104,6 +104,9 @@ def samples_to_intervals(num_samples, num_samples_per_region, interval_table, go
     # Sum over each row
     # num_samples_goal = np.sum(num_samples_per_region[:, goal_bool], axis=1)
     # num_samples_critical = np.sum(num_samples_per_region[:, critical_bool], axis=1)
+
+    print('Samples per region shape:', num_samples_per_region.shape)
+
     num_samples_absorbing = num_samples - np.sum(num_samples_per_region, axis=1)
     print('- Num samples absorbing:', num_samples_absorbing)
 
