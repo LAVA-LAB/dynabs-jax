@@ -63,9 +63,9 @@ P_full, P_absorbing = samples_to_intervals(args.num_samples,
                                            partition.critical['bools'])
 
 # %%
-print('Create iMDP...')
 
 if args.checker == 'storm' or args.debug:
+    print('Create iMDP using storm...')
 
     # Build interval MDP via StormPy
     t = time.time()
@@ -84,6 +84,7 @@ if args.checker == 'storm' or args.debug:
     print(f'- Verify with storm took: {(time.time() - t):.3f} sec.')
 
 if args.checker == 'prism' or args.debug:
+    print('Create iMDP using prism...')
 
     t = time.time()
     builderP = BuilderPrism(states=partition.regions['idxs'],
