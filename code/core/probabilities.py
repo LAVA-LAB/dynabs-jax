@@ -108,11 +108,10 @@ def samples_to_intervals(num_samples, num_samples_per_region, interval_table, go
     # num_samples_goal = np.sum(num_samples_per_region[:, goal_bool], axis=1)
     # num_samples_critical = np.sum(num_samples_per_region[:, critical_bool], axis=1)
 
-    print('Samples per region shape:', num_samples_per_region.shape)
-    print('Samples per region sum:', np.sum(num_samples_per_region, axis=1))
+    # print('Samples per region shape:', num_samples_per_region.shape)
+    # print('Samples per region sum:', np.sum(num_samples_per_region, axis=1))
 
     num_samples_absorbing = num_samples - np.sum(num_samples_per_region, axis=1)
-    print('- Num samples absorbing:', num_samples_absorbing)
 
     # Exclude critical regions and goal regions
     # mask = ~goal_bool * ~critical_bool
@@ -126,8 +125,8 @@ def samples_to_intervals(num_samples, num_samples_per_region, interval_table, go
     # P_goal = interval_table[num_samples - num_samples_goal]
     # P_critical = interval_table[num_samples - num_samples_critical]
 
-    print('Table size:', interval_table.shape)
-    print('Min/max index:', np.min(num_samples_absorbing), np.max(num_samples_absorbing))
+    # print('Table size:', interval_table.shape)
+    # print('Min/max index:', np.min(num_samples_absorbing), np.max(num_samples_absorbing))
 
     P_absorbing = interval_table[num_samples - num_samples_absorbing]
     P_full = interval_table[num_samples - num_samples_per_region]
