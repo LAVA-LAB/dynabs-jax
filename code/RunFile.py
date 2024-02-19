@@ -17,8 +17,6 @@ args = parse_arguments()
 np.random.seed(args.seed)
 args.jax_key = jax.random.PRNGKey(args.seed)
 
-args.checker = 'storm'
-
 # Set current working directory
 args.cwd = os.path.dirname(os.path.abspath(__file__))
 args.root_dir = Path(args.cwd)
