@@ -54,7 +54,7 @@ class BuilderStorm:
         states_created = 0
 
         print('- Generate graph for successor states')
-        successor_states = [np.where(P_full[0, :, 0] > 0)[0] for a in actions]
+        successor_states = [np.where(P_full[a, :, 0] > 0)[0] for a in actions]
 
         # For all states
         print('- Build iMDP...')
