@@ -119,7 +119,7 @@ class Drone3D(object):
 
         self.partition['boundary'] = np.array([[-15, -2.25, -9, -2.25, -7, -2.25],
                                                [15, 2.25, 9, 2.25, 7, 2.25]])
-        self.partition['number_per_dim'] = np.array([15, 6, 9, 6, 7, 6])
+        self.partition['number_per_dim'] = np.array([15, 4, 9, 4, 7, 4])
 
         self.goal = np.array([
             [[11, -3, 1, -3, -7, -3], [15, 3, 1, 3, -7, 3]]
