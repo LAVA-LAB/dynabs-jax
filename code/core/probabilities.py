@@ -142,7 +142,7 @@ def normalized_sample_count(num_regions, d, noise_samples, lb, ub, number_per_di
     samples = d + noise_samples
 
     # Discard samples outside of partition
-    in_partition = jnp.all((samples > lb) * (samples < ub), axis=1)
+    in_partition = jnp.all((samples >= lb) * (samples <= ub), axis=1)
 
     # Normalize samples
     samples_norm = (samples - lb) / (ub - lb) * number_per_dim
