@@ -151,15 +151,16 @@ def normalize_and_count(d, num_regions, noise_samples, lb, ub, number_per_dim, r
     samples_region_idxs = in_partition * (region_idx_array[tuple(samples_idxs.T)] + 1)
 
     # Determine counts for each index
-    counts = jnp.bincount(samples_region_idxs, length=784 + 1)[1:]
+    counts = jnp.bincount(samples_region_idxs, length=num_regions + 1)[1:]
 
     return counts
 
 
 def count_rectangular(model, partition, target_points, noise_samples, batch_size):
 
-    fn = jax.jit(normalize_and_count)
-    fn_vmap = jax.jit(jax.vmap(normalize_and_count, in_axes=(0, None, None, None, None, None, None), out_axes=0))
+    fn = jax.jit(normalize_and_count, static_argnums=(1))
+    fn_vmap = jax.jit(jax.vmap(normalize_and_count, in_axes=(0, None, None, None, None, None, None), out_axes=0),
+                      static_argnums=(1))
 
     # If batch size is > 1, then use vmap version. Otherwise, use plain Python for loop.
     if batch_size > 1:
