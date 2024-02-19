@@ -133,7 +133,7 @@ def normalized_sample_count(noise_samples, d, lb, ub, number_per_dim):
     '''
 
     # Determine successor state samples
-    succ_samples = d + noise_samples
+    samples = d + noise_samples
 
     # Discard samples outside of partition
     samples_in_partition = np.all((samples >= lb) * (samples <= ub), axis=1)
