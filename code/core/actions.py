@@ -124,7 +124,7 @@ def compute_enabled_actions(As, bs, region_vertices, mode = 'fori_loop', batch_s
             bar = tqdm(zip(starts, ends), total=len(region_vertices))
             for (i, j) in bar:
                 enabled_actions[i:j] = vmap_compute_actions_enabled_in_region(As, bs, region_vertices[i:j])
-                bar.update(batch_size)
+                bar.update(10)
                 print('hi')
 
     print(f'- Enabled actions computed (took {(time.time() - t):.3f} sec.)')
