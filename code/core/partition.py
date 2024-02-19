@@ -196,8 +196,13 @@ class RectangularPartition(object):
 
         else:
 
-            critical_regions_bools = np.array([any_points_in_polytope(A, b, critical_samples)
-                                               for A,b in zip(self.regions['A'], self.regions['b'])])
+            critical_regions_bools = np.full(len(self.regions['A']), fill_value=True)
+
+            for i, (A, b) in tqdm(enumerate(zip(self.regions['A'], self.regions['b']))):
+                critical_regions_bools[i] = any_points_in_polytope(A, b, critical_samples)
+
+            # critical_regions_bools = np.array([any_points_in_polytope(A, b, critical_samples)
+            #                                    for A,b in zip(self.regions['A'], self.regions['b'])])
 
         critical_regions_idxs = region_idxs[critical_regions_bools]
         critical_regions_centers = centers[critical_regions_bools]
