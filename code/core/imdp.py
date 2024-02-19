@@ -22,8 +22,11 @@ class BuilderStorm:
         self.absorbing_state = np.max(states) + 1
 
         # Predefine the pycarl intervals
-        self.intervals = {}
-        self.intervals[(1,1)] = pycarl.Interval(1, 1)
+        self.intervals_raw = {}
+        self.intervals_raw[(1, 1)] = pycarl.Interval(1, 1)
+
+        print('- Generate graph for successor states')
+        successor_states = [np.where(P_full[a, :, 0] > 0)[0] for a in actions]
 
         # Reshape all probability intervals
         print('- Generate pycarl intervals...')
@@ -35,26 +38,23 @@ class BuilderStorm:
 
         # Enumerate only over unique probability intervals
         for P in tqdm(P_unique):
-            self.intervals[tuple(P)] = pycarl.Interval(P[0], P[1])
+            self.intervals_raw[tuple(P)] = pycarl.Interval(P[0], P[1])
 
-        # for a in tqdm(actions):
-        #     self.intervals[a] = {}
-        #
-        #     # Add intervals for each successor state
-        #     for ss in states:
-        #         if P_full[a, ss, 0] > 0: # and ss not in critical_regions and ss not in goal_regions:
-        #             if
-        #
-        #             self.intervals[a][ss] = pycarl.Interval(P_full[a, ss, 0], P_full[a, ss, 1])
-        #
-        #     # Add intervals for other states
-        #     self.intervals_absorbing[a] = pycarl.Interval(P_absorbing[a, 0], P_absorbing[a, 1])
+        self.intervals_state = {}
+        self.intervals_absorbing = {}
+
+        for a in tqdm(actions):
+            self.intervals_state[a] = {}
+
+            # Add intervals for each successor state
+            for ss in successor_states[a]:
+                self.intervals_state[a][ss] = self.intervals_raw[tuple(P_full[a, ss])]
+
+            # Add intervals for other states
+            self.intervals_absorbing[a] = self.intervals_raw[tuple(P_absorbing[a])]
 
         row = 0
         states_created = 0
-
-        print('- Generate graph for successor states')
-        successor_states = [np.where(P_full[a, :, 0] > 0)[0] for a in actions]
 
         # For all states
         print('- Build iMDP...')
@@ -67,18 +67,24 @@ class BuilderStorm:
 
             # If no actions are enabled at all, add a deterministic transition to the absorbing state
             if len(enabled_in_s) == 0 or s in critical_regions or s in goal_regions:
-                self.builder.add_next_value(row, self.absorbing_state, self.intervals[(1,1)])
+                self.builder.add_next_value(row, self.absorbing_state, self.intervals_raw[(1,1)])
                 row += 1
 
             else:
 
                 # For every enabled action
                 for a in enabled_in_s:
-                    for ss in successor_states[a]:
-                        self.builder.add_next_value(row, ss, self.intervals[tuple(P_full[a, ss])])
+                    for ss, intv in self.intervals_state[a].items():
+                        self.builder.add_next_value(row, ss, intv)
 
                     # Add transitions to absorbing state
-                    self.builder.add_next_value(row, self.absorbing_state, self.intervals[tuple(P_absorbing[a])])
+                    self.builder.add_next_value(row, self.absorbing_state, self.intervals_absorbing[a])
+
+                    # for ss in successor_states[a]:
+                    #     self.builder.add_next_value(row, ss, self.intervals[tuple(P_full[a, ss])])
+
+                    # # Add transitions to absorbing state
+                    # self.builder.add_next_value(row, self.absorbing_state, self.intervals[tuple(P_absorbing[a])])
 
                     # # Add transitions for current (s,a) pair to other normal states
                     # for ss, intv in self.intervals[a].items():
@@ -92,7 +98,7 @@ class BuilderStorm:
 
         for ss in [self.absorbing_state]:
             self.builder.new_row_group(row)
-            self.builder.add_next_value(row, ss, self.intervals[(1,1)])
+            self.builder.add_next_value(row, ss, self.intervals_raw[(1,1)])
             row += 1
             states_created += 1
 
