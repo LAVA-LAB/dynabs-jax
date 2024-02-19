@@ -28,6 +28,7 @@ args.root_dir = Path(args.cwd)
 print('Run using arguments:')
 for key,val in vars(args).items():
     print(' - `'+str(key)+'`: '+str(val))
+print('\n==============================\n')
 
 # Define and parse model
 if args.model == 'Drone2D':
@@ -54,7 +55,7 @@ enabled_actions = compute_enabled_actions(jnp.array(actions.backreach['A']),
                                           jnp.array(actions.backreach['b']),
                                           np.array(partition.regions['all_vertices']),
                                           mode = 'vmap',
-                                          batch_size = 1)
+                                          batch_size = 1000)
 
 # Compute noise samples
 samples = sample_noise(model, args.jax_key, args.num_samples)
@@ -65,7 +66,7 @@ num_samples_per_state = count_samples_per_region(args,
                                                  actions.backreach['target_points'],
                                                  samples,
                                                  mode = 'vmap',
-                                                 batch_size=100)
+                                                 batch_size=1000)
 
 table_filename = f'intervals_N={args.num_samples}_beta={args.confidence}.csv'
 interval_table = compute_scenario_interval_table(Path(str(args.root_dir), 'interval_tables', table_filename),
