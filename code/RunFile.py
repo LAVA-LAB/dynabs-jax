@@ -30,7 +30,12 @@ for key,val in vars(args).items():
     print(' - `'+str(key)+'`: '+str(val))
 
 # Define and parse model
-base_model = Drone2D()
+if args.model == 'Drone2D':
+    base_model = Drone2D()
+elif args.model == 'Drone3D':
+    base_model = Drone3D()
+else:
+    assert False, f"The passed model '{args.model}' could not be found"
 model = parse_model(base_model)
 args.debug = True
 

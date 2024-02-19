@@ -25,6 +25,8 @@ def parse_arguments():
     parser.add_argument('--confidence', type=float, default=0.01,
                         help="Confidence level on each individual transition probability")
 
+    parser.add_argument('--model', type=str, default='Drone2D',
+                        help="Benchmark model to run")
     parser.add_argument('--checker', type=str, default='prism',
                         help="Model checker to use (prism or storm)")
     parser.add_argument('--prism_dir', type=str, default='~/Documents/Tools/prism/prism/bin/prism',
