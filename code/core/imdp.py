@@ -31,7 +31,7 @@ class BuilderStorm:
         P_full_flat = P_full_flat[P_full_flat[:,0] > 0,:]
         P_absorbing_flat = P_absorbing.reshape(-1, 2)
         P_absorbing_flat = P_absorbing_flat[P_absorbing_flat[:, 0] > 0, :]
-        P_unique = np.unique(np.vstack((P_full_flat, P_absorbing_flat)), axis=1)
+        P_unique = np.unique(np.vstack((P_full_flat, P_absorbing_flat)), axis=0)
 
         # Enumerate only over unique probability intervals
         for P in tqdm(P_unique):
