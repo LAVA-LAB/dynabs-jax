@@ -14,6 +14,7 @@ from core.probabilities import sample_noise, count_samples_per_region, compute_s
 from core.imdp import BuilderStorm, BuilderPrism
 
 args = parse_arguments()
+args.debug = True
 np.random.seed(args.seed)
 args.jax_key = jax.random.PRNGKey(args.seed)
 

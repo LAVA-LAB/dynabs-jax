@@ -8,4 +8,4 @@ Tested on Python 3.10
 
 # Example run
 
-python RunFile.py --checker storm
+python RunFile.py --checker storm --prism_dir ~/Documents/SBA/prism-imc/prism/
