@@ -16,6 +16,8 @@ from .polytope import num_points_in_polytope
 
 vmap_num_points_in_polytope = jax.jit(jax.vmap(num_points_in_polytope, in_axes=(0, 0, None), out_axes=0))
 
+from jax import config
+config.update("jax_enable_x64", True)
 
 @jax.jit
 def compute_contained_for_single_action(d, noise_samples, As, bs):
