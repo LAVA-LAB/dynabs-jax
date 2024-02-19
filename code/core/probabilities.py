@@ -70,7 +70,8 @@ def compute_samples_per_state(args, model, partition, target_points, noise_sampl
         result[1] = count_samples_per_state_rectangular(model, partition, target_points, noise_samples, mode,
                                                         batch_size)
 
-    assert np.all(result[0] == result[1])
+    if args.debug:
+        assert np.all(result[0] == result[1])
 
     print(f'Evaluating samples took {(time.time() - t):.3f} sec.')
 
@@ -122,7 +123,7 @@ def count_samples_per_state(partition, target_points, noise_samples, mode, batch
 
 
 @jax.jit
-def normalized_sample_count(noise_samples, d, lb, ub, number_per_dim):
+def normalized_sample_count(noise_samples, d, lb, ub, number_per_dim, region_idx_array):
     '''
     Normalize the given samples, such that each region is a unit hypercube
     :param samples:
@@ -136,7 +137,7 @@ def normalized_sample_count(noise_samples, d, lb, ub, number_per_dim):
     samples = d + noise_samples
 
     # Discard samples outside of partition
-    samples_in_partition = np.all((samples >= lb) * (samples <= ub), axis=1)
+    samples_in_partition = jnp.all((samples >= lb) * (samples <= ub), axis=1)
 
     # Normalize samples
     samples_norm = (samples - lb) / (ub - lb) * number_per_dim
@@ -144,7 +145,11 @@ def normalized_sample_count(noise_samples, d, lb, ub, number_per_dim):
     # Perform integer division by 1 and determine to which regions the samples belong
     samples_idxs = jnp.array(samples_norm // 1, dtype=int)
 
-    return samples_idxs, samples_in_partition
+    samples_region_idxs = region_idx_array[tuple(samples_idxs.T)]
+
+    # outmatrix = jnp.zeros((len(noise_samples), len(region_idx_array)), dtype=bool)
+
+    return samples_region_idxs, samples_in_partition
 
 
 def count_samples_per_state_rectangular(model, partition, target_points, noise_samples, mode, batch_size=1000):
@@ -153,23 +158,23 @@ def count_samples_per_state_rectangular(model, partition, target_points, noise_s
 
     for i, d in tqdm(enumerate(target_points)):
 
-        t = time.time()
+        # t = time.time()
 
-        samples_idxs, samples_in_partition = normalized_sample_count(noise_samples, d,
+        samples_region_idxs, samples_in_partition = normalized_sample_count(noise_samples, d,
                                          lb = model.partition['boundary'][0],
                                          ub = model.partition['boundary'][1],
-                                         number_per_dim = model.partition['number_per_dim'])
+                                         number_per_dim = model.partition['number_per_dim'],
+                                         region_idx_array = partition.region_idx_array)
 
-        print('Part 1:', time.time()-t)
-        t = time.time()
+        # print('Part 1:', time.time()-t)
+        # t = time.time()
 
         # Determine region idxs of every sample
-        samples_region_idxs = partition.region_idx_array[tuple(samples_idxs[samples_in_partition].T)]
-        regions, counts = np.unique(samples_region_idxs, return_counts=True)
+        regions, counts = np.unique(samples_region_idxs[samples_in_partition], return_counts=True)
 
         num_samples_per_region[i,regions] = counts
 
-        print('Part 2:', time.time() - t)
+        # print('Part 2:', time.time() - t)
 
     return np.array(num_samples_per_region)
 

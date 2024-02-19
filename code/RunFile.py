@@ -29,6 +29,8 @@ for key,val in vars(args).items():
 base_model = Drone3D()
 model = parse_model(base_model)
 
+args.debug= True
+
 partition = RectangularPartition(number_per_dim=model.partition['number_per_dim'],
                                  partition_boundary=model.partition['boundary'],
                                  goal_regions=model.goal,
@@ -108,3 +110,5 @@ if args.checker == 'prism' or args.debug:
 
 if args.debug:
     assert np.all(np.abs(builderS.results - builderP.results)) < 1e-4
+
+# %%
