@@ -13,6 +13,10 @@ from core.probabilities import sample_noise, compute_samples_per_state, compute_
     samples_to_intervals
 from core.imdp import BuilderStorm, BuilderPrism
 
+# Configure jax to use Float64 (otherwise, GPU computations may yield slightly different results)
+from jax import config
+config.update("jax_enable_x64", True)
+
 args = parse_arguments()
 np.random.seed(args.seed)
 args.jax_key = jax.random.PRNGKey(args.seed)

@@ -40,7 +40,7 @@ def num_points_in_polytope(A, b, points):
     ''' Check if polytope defined by Ax <= b contains given list of points '''
 
     # Check matrix inequality
-    bools = (jnp.matmul(A, points.T).T < b)
+    bools = (jnp.matmul(A, points.T).T <= b)
 
     # A point is contained if every constraint is satisfied
     points_contained = jnp.min(bools, axis=1) #jnp.all(bools, axis=1)
