@@ -26,13 +26,13 @@ class BuilderStorm:
         self.intervals[(1,1)] = pycarl.Interval(1, 1)
 
         # Reshape all probability intervals
-        P_full_flat = P_full.reshape(-1, 2)
-        P_absorbing_flat = P_absorbing.reshape(-1, 2)
+        print('- Generate pycarl intervals...')
+        P_full_flat = P_full[P_full[:,:,0] > 0].reshape(-1, 2)
+        P_absorbing_flat = P_absorbing[P_absorbing[:,0] > 0].reshape(-1, 2)
         P_unique = np.unique(np.vstack((P_full_flat, P_absorbing_flat)), axis=1)
 
-        print('- Generate pycarl intervals...')
         # Enumerate only over unique probability intervals
-        for P in P_unique:
+        for P in tqdm(P_unique):
             self.intervals[tuple(P)] = pycarl.Interval(P[0], P[1])
 
         # for a in tqdm(actions):
