@@ -157,7 +157,7 @@ def count_samples_per_state_rectangular(model, partition, target_points, noise_s
 
     num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
 
-    fn_cpu = jax.jit(normalized_sample_count, backend='cpu', static_argnums=0)
+    fn_cpu = jax.jit(normalized_sample_count, backend='gpu', static_argnums=0)
 
     for i, d in tqdm(enumerate(target_points)):
 
