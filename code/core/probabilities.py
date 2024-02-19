@@ -71,10 +71,6 @@ def compute_samples_per_state(args, model, partition, target_points, noise_sampl
                                                         batch_size)
 
     if args.debug:
-        import sys
-        import numpy
-        numpy.set_printoptions(threshold=sys.maxsize)
-        print(result[0] - result[1])
         assert np.all(result[0] == result[1])
 
     print(f'Evaluating samples took {(time.time() - t):.3f} sec.')

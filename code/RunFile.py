@@ -37,7 +37,6 @@ elif args.model == 'Drone3D':
 else:
     assert False, f"The passed model '{args.model}' could not be found"
 model = parse_model(base_model)
-args.debug = True
 
 partition = RectangularPartition(number_per_dim=model.partition['number_per_dim'],
                                  partition_boundary=model.partition['boundary'],
