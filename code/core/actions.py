@@ -120,8 +120,8 @@ def compute_enabled_actions(As, bs, region_vertices, mode = 'fori_loop', batch_s
             starts, ends = create_batches(len(region_vertices), batch_size)
             enabled_actions = np.full((len(region_vertices), len(As)), fill_value=False)
 
-            bar = zip(starts, ends)
-            for (i, j) in tqdm(bar):
+            bar = tqdm(zip(starts, ends), total=len(region_vertices))
+            for (i, j) in bar:
                 enabled_actions[i:j] = vmap_compute_actions_enabled_in_region(As, bs, region_vertices[i:j])
                 bar.update(batch_size)
 
