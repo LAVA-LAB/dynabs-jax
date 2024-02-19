@@ -24,7 +24,9 @@ class BuilderStorm:
         # Predefine the pycarl intervals
         self.intervals = {}
         self.intervals_absorbing = {}
-        for a in actions:
+
+        print('- Generate pycarl intervals...')
+        for a in tqdm(actions):
             self.intervals[a] = {}
 
             # Add intervals for each successor state
@@ -39,6 +41,7 @@ class BuilderStorm:
         states_created = 0
 
         # For all states
+        print('- Build iMDP...')
         for s in tqdm(states):
 
             # For each state, create a new row group

@@ -103,11 +103,14 @@ def count_general(partition, target_points, noise_samples, mode, batch_size):
             starts, ends = create_batches(len(target_points), batch_size)
             num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
 
-            for (i, j) in tqdm(zip(starts, ends)):
+            bar = tqdm(zip(starts, ends))
+            for (i, j) in bar:
                 num_samples_per_region[i:j] = vmap_compute_contained_for_single_action(target_points[i:j],
                                                                                        noise_samples,
                                                                                        partition.regions['A'],
                                                                                        partition.regions['b'])
+
+                bar.update(batch_size)
 
         else:
             num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
@@ -166,7 +169,9 @@ def count_rectangular(model, partition, target_points, noise_samples, batch_size
 
         starts, ends = create_batches(len(target_points), batch_size)
         num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
-        for (i, j) in tqdm(zip(starts, ends)):
+
+        bar = tqdm(zip(starts, ends))
+        for (i, j) in bar:
             num_samples_per_region[i:j] = fn_vmap(target_points[i:j],
                                              len(partition.regions['idxs']),
                                              noise_samples,
@@ -174,6 +179,8 @@ def count_rectangular(model, partition, target_points, noise_samples, batch_size
                                              model.partition['boundary'][1],
                                              model.partition['number_per_dim'],
                                              partition.region_idx_array)
+
+            bar.update(batch_size)
 
     else:
         # Define jitted function
