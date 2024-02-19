@@ -19,7 +19,7 @@ def compute_scenario_interval_table(filepath, num_samples, confidence_level):
 
     if not os.path.isfile(filepath):
 
-        print('\nThe following table file does not exist:' + str(filepath))
+        print('The following table file does not exist:' + str(filepath))
         print('Create table now instead...')
 
         P_low, P_upp = create_table(N=num_samples, beta=confidence_level, kstep=1, trials=0,
@@ -28,7 +28,7 @@ def compute_scenario_interval_table(filepath, num_samples, confidence_level):
         table = np.column_stack((P_low, P_upp))
 
     else:
-        print('-- Loading scenario approach table...')
+        print('Loading scenario approach table...')
 
         # Load scenario approach table
         table = load_table(tableFile=filepath, k=num_samples)
@@ -38,7 +38,7 @@ def compute_scenario_interval_table(filepath, num_samples, confidence_level):
 
 def count_samples_per_region(args, model, partition, target_points, noise_samples, mode, batch_size=1000):
 
-    print('Compute transition probability intervals...')
+    print('Compute number of successor state samples in each partition element...')
     t = time.time()
 
     if args.debug:
@@ -58,8 +58,8 @@ def count_samples_per_region(args, model, partition, target_points, noise_sample
     if args.debug:
         assert np.all(result[0] == result[1])
 
-    print(f'Evaluating samples took {(time.time() - t):.3f} sec.')
-
+    print(f'Computing number of contained samples took {(time.time() - t):.3f} sec.')
+    print('')
     return result[i]
 
 
@@ -158,12 +158,12 @@ def normalize_and_count(d, num_regions, noise_samples, lb, ub, number_per_dim, r
 
 def count_rectangular(model, partition, target_points, noise_samples, batch_size):
 
-    fn = jax.jit(normalize_and_count, static_argnums=(1))
-    fn_vmap = jax.jit(jax.vmap(normalize_and_count, in_axes=(0, None, None, None, None, None, None), out_axes=0),
-                      static_argnums=(1))
-
     # If batch size is > 1, then use vmap version. Otherwise, use plain Python for loop.
     if batch_size > 1:
+        # Define vmap function
+        fn_vmap = jax.jit(jax.vmap(normalize_and_count, in_axes=(0, None, None, None, None, None, None), out_axes=0),
+                          static_argnums=(1))
+
         starts, ends = create_batches(len(target_points), batch_size)
         num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
         for (i, j) in tqdm(zip(starts, ends)):
@@ -176,6 +176,9 @@ def count_rectangular(model, partition, target_points, noise_samples, batch_size
                                              partition.region_idx_array)
 
     else:
+        # Define jitted function
+        fn = jax.jit(normalize_and_count, static_argnums=(1))
+
         num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
         for i, d in tqdm(enumerate(target_points)):
             num_samples_per_region[i] = fn(d = d,
@@ -192,10 +195,8 @@ def count_rectangular(model, partition, target_points, noise_samples, batch_size
 
 def samples_to_intervals(num_samples, num_samples_per_region, interval_table, goal_bool, critical_bool):
 
-    import sys
-    np.set_printoptions(threshold=sys.maxsize)
-
-    print('- Num samples:', num_samples)
+    print('Convert number of contained samples to probability intervals...')
+    t = time.time()
 
     # Sum over each row
     # num_samples_goal = np.sum(num_samples_per_region[:, goal_bool], axis=1)
@@ -238,6 +239,8 @@ def samples_to_intervals(num_samples, num_samples_per_region, interval_table, go
     assert np.all(np.sum(P_full[:,:,0], axis=1) + P_absorbing[:,0]) <= 1
     assert np.all(np.sum(P_full[:, :, 1], axis=1) + P_absorbing[:, 1]) >= 1
 
+    print(f'Computing probability intervals took {(time.time() - t):.3f} sec.')
+    print('')
     # return P_full, P_goal, P_critical, P_absorbing
     return P_full, P_absorbing
 

@@ -2,6 +2,7 @@ import logging
 import numpy as np
 import pandas as pd
 from .utils import writeFile
+from tqdm import tqdm
 
 class BuilderStorm:
 
@@ -38,7 +39,7 @@ class BuilderStorm:
         states_created = 0
 
         # For all states
-        for s in states:
+        for s in tqdm(states):
 
             # For each state, create a new row group
             self.builder.new_row_group(row)

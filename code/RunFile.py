@@ -57,16 +57,12 @@ enabled_actions = compute_enabled_actions(jnp.array(actions.backreach['A']),
                                           mode = 'vmap',
                                           batch_size = 100)
 
+print(f"(Number of enabled actions: {np.sum(np.any(enabled_actions, axis=0))})\n")
+
 # Compute noise samples
 samples = sample_noise(model, args.jax_key, args.num_samples)
-
-num_samples_per_state = count_samples_per_region(args,
-                                                 model,
-                                                 partition,
-                                                 actions.backreach['target_points'],
-                                                 samples,
-                                                 mode = 'vmap',
-                                                 batch_size=100)
+num_samples_per_state = count_samples_per_region(args, model, partition, actions.backreach['target_points'],
+                            samples, mode = 'vmap', batch_size=100)
 
 table_filename = f'intervals_N={args.num_samples}_beta={args.confidence}.csv'
 interval_table = compute_scenario_interval_table(Path(str(args.root_dir), 'interval_tables', table_filename),
