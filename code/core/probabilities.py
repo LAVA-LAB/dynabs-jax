@@ -127,7 +127,6 @@ def count_samples_per_state(partition, target_points, noise_samples, mode, batch
     return np.array(num_samples_per_region)
 
 
-@partial(jax.jit, static_argnums=0)
 def normalized_sample_count(num_regions, d, noise_samples, lb, ub, number_per_dim, region_idx_array):
     '''
     Normalize the given samples, such that each region is a unit hypercube
@@ -163,7 +162,7 @@ def count_samples_per_state_rectangular(model, partition, target_points, noise_s
 
     num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
 
-    fn_cpu = jax.jit(normalized_sample_count, backend='cpu')
+    fn_cpu = jax.jit(normalized_sample_count, backend='cpu', static_argnums=0)
 
     for i, d in tqdm(enumerate(target_points)):
 
