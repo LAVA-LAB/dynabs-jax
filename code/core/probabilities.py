@@ -49,9 +49,35 @@ def compute_scenario_interval_table(filepath, num_samples, confidence_level):
     return table
 
 
-def compute_num_contained_all_actions(partition, target_points, noise_samples, mode, batch_size=1000):
+def compute_samples_per_state(args, model, partition, target_points, noise_samples, mode, batch_size=1000):
+
     print('Compute transition probability intervals...')
     t = time.time()
+
+    if args.debug:
+        print('- Debug mode enabled (compare all methods)')
+
+    result = {}
+
+    if not partition.rectangular or args.debug:
+        print('- Mode for nonrectangular partition')
+        i = 0
+        result[0] = count_samples_per_state(partition, target_points, noise_samples, mode, batch_size)
+
+    if partition.rectangular or args.debug:
+        print('- Mode for rectangular partition')
+        i = 1
+        result[1] = count_samples_per_state_rectangular(model, partition, target_points, noise_samples, mode,
+                                                        batch_size)
+
+    assert np.all(result[0] == result[1])
+
+    print(f'Evaluating samples took {(time.time() - t):.3f} sec.')
+
+    return result[i]
+
+
+def count_samples_per_state(partition, target_points, noise_samples, mode, batch_size=1000):
 
     @jax.jit
     def loop_body(i, val):
@@ -92,7 +118,49 @@ def compute_num_contained_all_actions(partition, target_points, noise_samples, m
                                                                             partition.regions['A'],
                                                                             partition.regions['b'])
 
-    print(f'Evaluating samples took {(time.time() - t):.3f} sec.')
+    return np.array(num_samples_per_region)
+
+
+@jax.jit
+def normalized_sample_count(samples, lb, ub, number_per_dim):
+    '''
+    Normalize the given samples, such that each region is a unit hypercube
+    :param samples:
+    :param lb:
+    :param ub:
+    :param cell_width:
+    :return:
+    '''
+
+    # Discard samples outside of partition
+    samples_in_partition = np.all((samples >= lb) * (samples <= ub), axis=1)
+
+    # Normalize samples
+    samples_norm = (samples - lb) / (ub - lb) * number_per_dim
+
+    # Perform integer division by 1 and determine to which regions the samples belong
+    samples_idxs = jnp.array(samples_norm // 1, dtype=int)
+
+    return samples_idxs, samples_in_partition
+
+
+def count_samples_per_state_rectangular(model, partition, target_points, noise_samples, mode, batch_size=1000):
+
+    num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
+
+    for i, d in tqdm(enumerate(target_points)):
+        succ_samples = d + noise_samples
+
+        samples_idxs, samples_in_partition = normalized_sample_count(succ_samples,
+                                         lb = model.partition['boundary'][0],
+                                         ub = model.partition['boundary'][1],
+                                         number_per_dim = model.partition['number_per_dim'])
+
+        # Determine region idxs of every sample
+        samples_region_idxs = partition.region_idx_array[tuple(samples_idxs[samples_in_partition].T)]
+        regions, counts = np.unique(samples_region_idxs, return_counts=True)
+
+        num_samples_per_region[i,regions] = counts
 
     return np.array(num_samples_per_region)
 

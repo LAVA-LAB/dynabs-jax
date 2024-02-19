@@ -9,13 +9,15 @@ from core.options import parse_arguments
 from core.model import parse_model
 from core.partition import RectangularPartition
 from core.actions import RectangularTarget, compute_enabled_actions
-from core.probabilities import sample_noise, compute_num_contained_all_actions, compute_scenario_interval_table, \
+from core.probabilities import sample_noise, compute_samples_per_state, compute_scenario_interval_table, \
     samples_to_intervals
 from core.imdp import BuilderStorm, BuilderPrism
 
 args = parse_arguments()
 np.random.seed(args.seed)
 args.jax_key = jax.random.PRNGKey(args.seed)
+
+args.checker = 'storm'
 
 # Set current working directory
 args.cwd = os.path.dirname(os.path.abspath(__file__))
@@ -44,12 +46,18 @@ print(f"(Number of actions: {len(actions.target_points)})\n")
 enabled_actions = compute_enabled_actions(jnp.array(actions.backreach['A']),
                                           jnp.array(actions.backreach['b']),
                                           np.array(partition.regions['all_vertices']),
-                                          mode = 'python')
+                                          mode = 'python',
+                                          batch_size = 1000)
 
 samples = sample_noise(model, args.jax_key, args.num_samples)
 
-num_samples_per_region = compute_num_contained_all_actions(partition, actions.backreach['target_points'],
-                                                           samples, mode = 'python', batch_size=100)
+num_samples_per_state = compute_samples_per_state(args,
+                                                  model,
+                                                  partition,
+                                                  actions.backreach['target_points'],
+                                                  samples,
+                                                  mode = 'python',
+                                                  batch_size=100)
 
 table_filename = f'intervals_N={args.num_samples}_beta={args.confidence}.csv'
 interval_table = compute_scenario_interval_table(Path(str(args.root_dir), 'interval_tables', table_filename),
@@ -57,7 +65,7 @@ interval_table = compute_scenario_interval_table(Path(str(args.root_dir), 'inter
 
 # Compute probability intervals
 P_full, P_absorbing = samples_to_intervals(args.num_samples,
-                                           num_samples_per_region,
+                                           num_samples_per_state,
                                            interval_table,
                                            partition.goal['bools'],
                                            partition.critical['bools'])

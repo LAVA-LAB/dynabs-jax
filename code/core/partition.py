@@ -81,6 +81,8 @@ class RectangularPartition(object):
 
     def __init__(self, number_per_dim, partition_boundary, goal_regions, critical_regions, mode = 'fori_loop'):
 
+        self.rectangular = True
+
         print('Define rectangular partition...')
         t_total = time.time()
 
@@ -90,12 +92,23 @@ class RectangularPartition(object):
         lb_center = partition_boundary[0] + self.cell_width * 0.5
         ub_center = partition_boundary[1] - self.cell_width * 0.5
 
-        # Define the grid centers
-        centers = define_grid_jax(lb_center, ub_center, number_per_dim)
+        # First define a grid where each region is a unit cube
+        lb_unit = np.zeros(len(lb_center), dtype=int)
+        ub_unit = np.array(number_per_dim-1, dtype=int)
+        centers_unit = define_grid_jax(lb_unit, ub_unit, number_per_dim)
 
         # TODO: Remove this
         from .utils import lexsort4d
-        centers = lexsort4d(centers)
+        centers_unit = lexsort4d(centers_unit)
+
+        # TODO: Check how to avoid this step
+        # Define n-dimensional array (n = dimension of state space) to index elements of the partition
+        centers_numpy = np.array(centers_unit, dtype=int)
+        self.region_idx_array = np.zeros(number_per_dim, dtype=int)
+        self.region_idx_array[tuple(centers_numpy.T)] = np.arange(len(centers_numpy))
+
+        # Now scale the unit-cube partition appropriately
+        centers = centers_unit * self.cell_width + lb_center
 
         region_idxs = np.arange(len(centers))
         lower_bounds = centers - self.cell_width / 2
