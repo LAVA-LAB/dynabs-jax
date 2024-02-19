@@ -35,6 +35,8 @@ class BuilderStorm:
 
         # Enumerate only over unique probability intervals
         for P in tqdm(P_unique):
+            print(P)
+
             self.intervals[tuple(P)] = pycarl.Interval(P[0], P[1])
 
         # for a in tqdm(actions):
