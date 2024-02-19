@@ -53,6 +53,9 @@ class BuilderStorm:
         row = 0
         states_created = 0
 
+        print('- Generate graph for successor states')
+        successor_states = [np.where(P_full[0, :, 0] > 0)[0] for a in actions]
+
         # For all states
         print('- Build iMDP...')
         for s in tqdm(states):
@@ -71,10 +74,8 @@ class BuilderStorm:
 
                 # For every enabled action
                 for a in enabled_in_s:
-
-                    for ss in states:
-                        if P_full[a, ss, 0] > 0:
-                            self.builder.add_next_value(row, ss, self.intervals[tuple(P_full[a, ss])])
+                    for ss in successor_states[a]:
+                        self.builder.add_next_value(row, ss, self.intervals[tuple(P_full[a, ss])])
 
                     # Add transitions to absorbing state
                     self.builder.add_next_value(row, self.absorbing_state, self.intervals[tuple(P_absorbing[a])])
