@@ -175,7 +175,7 @@ def count_samples_per_state_rectangular(model, partition, target_points, noise_s
                                          number_per_dim = model.partition['number_per_dim'],
                                          region_idx_array = partition.region_idx_array)
 
-    print('- Number of times function was compiled:', normalized_sample_count._cache_size())
+    print('- Number of times function was compiled:', fn_cpu._cache_size())
 
     return np.array(num_samples_per_region)
 
