@@ -27,8 +27,10 @@ class BuilderStorm:
 
         # Reshape all probability intervals
         print('- Generate pycarl intervals...')
-        P_full_flat = P_full[P_full[:,:,0] > 0].reshape(-1, 2)
-        P_absorbing_flat = P_absorbing[P_absorbing[:,0] > 0].reshape(-1, 2)
+        P_full_flat = P_full.reshape(-1, 2)
+        P_full_flat = P_full_flat[P_full_flat[:,0] > 0,:]
+        P_absorbing_flat = P_absorbing.reshape(-1, 2)
+        P_absorbing_flat = P_absorbing_flat[P_absorbing_flat[:, 0] > 0, :]
         P_unique = np.unique(np.vstack((P_full_flat, P_absorbing_flat)), axis=1)
 
         # Enumerate only over unique probability intervals
