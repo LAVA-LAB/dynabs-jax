@@ -20,7 +20,7 @@ def parse_arguments():
     parser.add_argument('--seed', type=int, default=0,
                         help="Seed for random number generators (Jax, Numpy)")
 
-    parser.add_argument('--num_samples', type=int, default=10000,
+    parser.add_argument('--num_samples', type=int, default=1000,
                         help="Number of samples to compute probability intervals for")
     parser.add_argument('--confidence', type=float, default=0.01,
                         help="Confidence level on each individual transition probability")

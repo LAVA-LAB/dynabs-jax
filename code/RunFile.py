@@ -26,9 +26,9 @@ for key,val in vars(args).items():
     print(' - `'+str(key)+'`: '+str(val))
 
 # Define and parse model
-base_model = Drone3D()
+base_model = Drone2D()
 model = parse_model(base_model)
-# args.debug= True
+args.debug = True
 
 partition = RectangularPartition(number_per_dim=model.partition['number_per_dim'],
                                  partition_boundary=model.partition['boundary'],

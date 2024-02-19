@@ -1,6 +1,7 @@
 import numpy as np
 import jax.numpy as jnp
 import jax
+from functools import partial
 import itertools
 import time
 import os
@@ -123,7 +124,18 @@ def count_samples_per_state(partition, target_points, noise_samples, mode, batch
 
 
 @jax.jit
-def normalized_sample_count(noise_samples, d, lb, ub, number_per_dim, region_idx_array):
+def func(d, noise_samples, lb, ub):
+
+    # Determine successor state samples
+    samples = d + noise_samples
+
+    # Discard samples outside of partition
+    samples_in_partition = jnp.all((samples >= lb) * (samples <= ub), axis=1)
+
+    return samples, samples_in_partition
+
+@partial(jax.jit, static_argnums=0)
+def normalized_sample_count(num_regions, samples, in_partition, lb, ub, number_per_dim, region_idx_array):
     '''
     Normalize the given samples, such that each region is a unit hypercube
     :param samples:
@@ -133,48 +145,43 @@ def normalized_sample_count(noise_samples, d, lb, ub, number_per_dim, region_idx
     :return:
     '''
 
-    # Determine successor state samples
-    samples = d + noise_samples
-
-    # Discard samples outside of partition
-    samples_in_partition = jnp.all((samples >= lb) * (samples <= ub), axis=1)
-
     # Normalize samples
     samples_norm = (samples - lb) / (ub - lb) * number_per_dim
 
     # Perform integer division by 1 and determine to which regions the samples belong
     samples_idxs = jnp.array(samples_norm // 1, dtype=int)
 
-    samples_region_idxs = region_idx_array[tuple(samples_idxs.T)]
+    # If the integer division is below zero, the sample is outside the partition, but we want to avoid wrapping.
+    # Thus, we set the index for these samples to zero, and increment all others by one
+    samples_region_idxs = in_partition * (region_idx_array[tuple(samples_idxs.T)] + 1)
 
-    # outmatrix = jnp.zeros((len(noise_samples), len(region_idx_array)), dtype=bool)
+    counts = jnp.bincount(samples_region_idxs, length=num_regions + 1)[1:]
 
-    return samples_region_idxs, samples_in_partition
+    return counts
 
 
 def count_samples_per_state_rectangular(model, partition, target_points, noise_samples, mode, batch_size=1000):
 
     num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
 
+
+
     for i, d in tqdm(enumerate(target_points)):
 
         # t = time.time()
 
-        samples_region_idxs, samples_in_partition = normalized_sample_count(noise_samples, d,
+        samples, in_partition = func(noise_samples, d, lb = model.partition['boundary'][0], ub = model.partition['boundary'][1])
+
+        num_samples_per_region[i] = normalized_sample_count(
+                                         num_regions = len(partition.regions['idxs']),
+                                         samples = samples,
+                                         in_partition = in_partition,
                                          lb = model.partition['boundary'][0],
                                          ub = model.partition['boundary'][1],
                                          number_per_dim = model.partition['number_per_dim'],
                                          region_idx_array = partition.region_idx_array)
 
-        # print('Part 1:', time.time()-t)
-        # t = time.time()
-
-        # Determine region idxs of every sample
-        regions, counts = np.unique(samples_region_idxs[samples_in_partition], return_counts=True)
-
-        num_samples_per_region[i,regions] = counts
-
-        # print('Part 2:', time.time() - t)
+    print('- Number of times function was compiled:', normalized_sample_count._cache_size())
 
     return np.array(num_samples_per_region)
 
