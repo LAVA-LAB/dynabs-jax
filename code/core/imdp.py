@@ -24,19 +24,29 @@ class BuilderStorm:
         # Predefine the pycarl intervals
         self.intervals = {}
         self.intervals[(1,1)] = pycarl.Interval(1, 1)
-        self.intervals_absorbing = {}
+
+        # Reshape all probability intervals
+        P_full_flat = P_full.reshape(-1, 2)
+        P_absorbing_flat = P_absorbing.reshape(-1, 2)
+        P_unique = np.unique(np.vstack((P_full_flat, P_absorbing_flat)), axis=1)
 
         print('- Generate pycarl intervals...')
-        for a in tqdm(actions):
-            self.intervals[a] = {}
+        # Enumerate only over unique probability intervals
+        for P in P_unique:
+            self.intervals[tuple(P)] = pycarl.Interval(P[0], P[1])
 
-            # Add intervals for each successor state
-            for ss in states:
-                if P_full[a, ss, 0] > 0: # and ss not in critical_regions and ss not in goal_regions:
-                    self.intervals[a][ss] = pycarl.Interval(P_full[a, ss, 0], P_full[a, ss, 1])
-
-            # Add intervals for other states
-            self.intervals_absorbing[a] = pycarl.Interval(P_absorbing[a, 0], P_absorbing[a, 1])
+        # for a in tqdm(actions):
+        #     self.intervals[a] = {}
+        #
+        #     # Add intervals for each successor state
+        #     for ss in states:
+        #         if P_full[a, ss, 0] > 0: # and ss not in critical_regions and ss not in goal_regions:
+        #             if
+        #
+        #             self.intervals[a][ss] = pycarl.Interval(P_full[a, ss, 0], P_full[a, ss, 1])
+        #
+        #     # Add intervals for other states
+        #     self.intervals_absorbing[a] = pycarl.Interval(P_absorbing[a, 0], P_absorbing[a, 1])
 
         row = 0
         states_created = 0
@@ -60,19 +70,26 @@ class BuilderStorm:
                 # For every enabled action
                 for a in enabled_in_s:
 
-                    # Add transitions for current (s,a) pair to other normal states
-                    for ss, intv in self.intervals[a].items():
-                        self.builder.add_next_value(row, ss, intv)
+                    for ss in states:
+                        if P_full[a, ss, 0] > 0:
+                            self.builder.add_next_value(row, ss, self.intervals[tuple(P_full[a, ss])])
 
-                    # Add transitions to other states
-                    self.builder.add_next_value(row, self.absorbing_state, self.intervals_absorbing[a])
+                    # Add transitions to absorbing state
+                    self.builder.add_next_value(row, self.absorbing_state, self.intervals[tuple(P_absorbing[a])])
+
+                    # # Add transitions for current (s,a) pair to other normal states
+                    # for ss, intv in self.intervals[a].items():
+                    #     self.builder.add_next_value(row, ss, intv)
+                    #
+                    # # Add transitions to other states
+                    # self.builder.add_next_value(row, self.absorbing_state, self.intervals_absorbing[a])
 
                     # For each (s,a) pair, increment the row count by one
                     row += 1
 
         for ss in [self.absorbing_state]:
             self.builder.new_row_group(row)
-            self.builder.add_next_value(row, ss, pycarl.Interval(1, 1))
+            self.builder.add_next_value(row, ss, self.intervals[(1,1)])
             row += 1
             states_created += 1
 
