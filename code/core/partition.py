@@ -165,7 +165,7 @@ class RectangularPartition(object):
         samples = [[]]*len(critical_regions)
         for i,critical in enumerate(critical_regions):
             # Size must be chosen small enough to ensure correct computation
-            size = np.array((critical[1] - critical[0]) / (0.5 * self.cell_width) + 1, dtype=int)
+            size = np.array((critical[1] - critical[0]) / (0.9 * self.cell_width) + 1, dtype=int)
             samples[i] = define_grid_jax(critical[0] + EPS, critical[1] - EPS, size)
         critical_samples = jnp.concatenate(samples)
         print(f'- Samples for computing critical regions defined (took {(time.time()-t):.3f} sec.)')
