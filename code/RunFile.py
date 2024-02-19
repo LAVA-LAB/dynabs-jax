@@ -55,7 +55,7 @@ enabled_actions = compute_enabled_actions(jnp.array(actions.backreach['A']),
                                           jnp.array(actions.backreach['b']),
                                           np.array(partition.regions['all_vertices']),
                                           mode = 'vmap',
-                                          batch_size = 100)
+                                          batch_size = 1)
 
 print(f"(Number of enabled actions: {np.sum(np.any(enabled_actions, axis=0))})\n")
 
