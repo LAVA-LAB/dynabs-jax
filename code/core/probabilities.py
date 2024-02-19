@@ -127,19 +127,8 @@ def count_samples_per_state(partition, target_points, noise_samples, mode, batch
     return np.array(num_samples_per_region)
 
 
-@jax.jit
-def func(d, noise_samples, lb, ub):
-
-    # Determine successor state samples
-    samples = d + noise_samples
-
-    # Discard samples outside of partition
-    samples_in_partition = jnp.all((samples >= lb) * (samples <= ub), axis=1)
-
-    return samples, samples_in_partition
-
 @partial(jax.jit, static_argnums=0)
-def normalized_sample_count(num_regions, samples, in_partition, lb, ub, number_per_dim, region_idx_array):
+def normalized_sample_count(num_regions, d, noise_samples, lb, ub, number_per_dim, region_idx_array):
     '''
     Normalize the given samples, such that each region is a unit hypercube
     :param samples:
@@ -148,6 +137,12 @@ def normalized_sample_count(num_regions, samples, in_partition, lb, ub, number_p
     :param cell_width:
     :return:
     '''
+
+    # Determine successor state samples
+    samples = d + noise_samples
+
+    # Discard samples outside of partition
+    in_partition = jnp.all((samples >= lb) * (samples <= ub), axis=1)
 
     # Normalize samples
     samples_norm = (samples - lb) / (ub - lb) * number_per_dim
@@ -168,18 +163,12 @@ def count_samples_per_state_rectangular(model, partition, target_points, noise_s
 
     num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
 
-
-
     for i, d in tqdm(enumerate(target_points)):
-
-        # t = time.time()
-
-        samples, in_partition = func(noise_samples, d, lb = model.partition['boundary'][0], ub = model.partition['boundary'][1])
 
         num_samples_per_region[i] = normalized_sample_count(
                                          num_regions = len(partition.regions['idxs']),
-                                         samples = samples,
-                                         in_partition = in_partition,
+                                         d = d,
+                                         noise_samples = noise_samples,
                                          lb = model.partition['boundary'][0],
                                          ub = model.partition['boundary'][1],
                                          number_per_dim = model.partition['number_per_dim'],
