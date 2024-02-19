@@ -226,8 +226,8 @@ def samples_to_intervals(num_samples, num_samples_per_region, interval_table, go
     P_absorbing = interval_table[num_samples - num_samples_absorbing]
     P_full = interval_table[num_samples - num_samples_per_region]
 
-    P_full = np.maximum(1e-6, np.round(P_full, 4))
-    P_absorbing = np.maximum(1e-6, np.round(P_absorbing, 4))
+    P_full = np.maximum(1e-6, np.round(P_full, 6))
+    P_absorbing = np.maximum(1e-6, np.round(P_absorbing, 6))
 
     # If the sample count was zero, force probability to zero
     P_full[num_samples_per_region == 0] = 0

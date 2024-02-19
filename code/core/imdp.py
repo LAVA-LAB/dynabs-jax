@@ -23,6 +23,7 @@ class BuilderStorm:
 
         # Predefine the pycarl intervals
         self.intervals = {}
+        self.intervals[(1,1)] = pycarl.Interval(1, 1)
         self.intervals_absorbing = {}
 
         print('- Generate pycarl intervals...')
@@ -51,7 +52,7 @@ class BuilderStorm:
 
             # If no actions are enabled at all, add a deterministic transition to the absorbing state
             if len(enabled_in_s) == 0 or s in critical_regions or s in goal_regions:
-                self.builder.add_next_value(row, self.absorbing_state, pycarl.Interval(1, 1))
+                self.builder.add_next_value(row, self.absorbing_state, self.intervals[(1,1)])
                 row += 1
 
             else:
