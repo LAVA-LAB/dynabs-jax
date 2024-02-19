@@ -102,26 +102,27 @@ def compute_enabled_actions(As, bs, region_vertices, mode = 'fori_loop', batch_s
 
     t = time.time()
     if mode == 'fori_loop':
+        # Use jax fori_loop
 
         enabled_actions = jnp.full((len(region_vertices), len(As)), fill_value=False)
         val = (As, bs, region_vertices, enabled_actions)
         val = jax.lax.fori_loop(0, len(region_vertices), loop_body, val)
         (_, _, _, enabled_actions) = val
 
-    elif mode == 'vmap':
-
-        starts, ends = create_batches(len(region_vertices), batch_size)
-        enabled_actions = np.full((len(region_vertices), len(As)), fill_value=False)
-
-        for (i, j) in tqdm(zip(starts, ends)):
-            vmap_compute_actions_enabled_in_region(As, bs, region_vertices[i:j])
-            enabled_actions[i:j] = vmap_compute_actions_enabled_in_region(As, bs, region_vertices[i:j])
-
     else:
+        # Use either vmap (if batch size > 1) or plain Python for loop
+        if batch_size == 1:
+            enabled_actions = np.full((len(region_vertices), len(As)), fill_value=False)
+            for (i, vertices) in tqdm(enumerate(region_vertices)):
+                enabled_actions[i] = vmap_all_points_in_polytope(As, bs, vertices)
 
-        enabled_actions = np.full((len(region_vertices), len(As)), fill_value=False)
-        for (i,vertices) in tqdm(enumerate(region_vertices)):
-            enabled_actions[i] = vmap_all_points_in_polytope(As,bs,vertices)
+        else:
+            starts, ends = create_batches(len(region_vertices), batch_size)
+            enabled_actions = np.full((len(region_vertices), len(As)), fill_value=False)
+
+            for (i, j) in tqdm(zip(starts, ends)):
+                vmap_compute_actions_enabled_in_region(As, bs, region_vertices[i:j])
+                enabled_actions[i:j] = vmap_compute_actions_enabled_in_region(As, bs, region_vertices[i:j])
 
     print(f'- Enabled actions computed (took {(time.time() - t):.3f} sec.)')
 

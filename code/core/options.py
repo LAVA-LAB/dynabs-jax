@@ -27,7 +27,7 @@ def parse_arguments():
 
     parser.add_argument('--model', type=str, default='Drone2D',
                         help="Benchmark model to run")
-    parser.add_argument('--checker', type=str, default='prism',
+    parser.add_argument('--checker', type=str, default='storm',
                         help="Model checker to use (prism or storm)")
     parser.add_argument('--prism_dir', type=str, default='~/Documents/Tools/prism/prism/bin/prism',
                         help="Directory where Prism is located")

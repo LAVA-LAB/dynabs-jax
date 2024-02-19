@@ -14,19 +14,6 @@ from .scenario.load_table import load_table
 from .utils import create_batches
 from .polytope import num_points_in_polytope
 
-vmap_num_points_in_polytope = jax.jit(jax.vmap(num_points_in_polytope, in_axes=(0, 0, None), out_axes=0))
-
-@jax.jit
-def compute_contained_for_single_action(d, noise_samples, As, bs):
-    succ_samples = d + noise_samples
-    num_samples_per_region = vmap_num_points_in_polytope(As, bs, succ_samples)
-
-    return num_samples_per_region
-
-
-vmap_compute_contained_for_single_action = jax.jit(jax.vmap(compute_contained_for_single_action,
-                                                            in_axes=(0, None, None, None), out_axes=0))
-
 
 def compute_scenario_interval_table(filepath, num_samples, confidence_level):
 
@@ -49,7 +36,7 @@ def compute_scenario_interval_table(filepath, num_samples, confidence_level):
     return table
 
 
-def compute_samples_per_state(args, model, partition, target_points, noise_samples, mode, batch_size=1000):
+def count_samples_per_region(args, model, partition, target_points, noise_samples, mode, batch_size=1000):
 
     print('Compute transition probability intervals...')
     t = time.time()
@@ -58,17 +45,15 @@ def compute_samples_per_state(args, model, partition, target_points, noise_sampl
         print('- Debug mode enabled (compare all methods)')
 
     result = {}
-
     if not partition.rectangular or args.debug:
         print('- Mode for nonrectangular partition')
         i = 0
-        result[0] = count_samples_per_state(partition, target_points, noise_samples, mode, batch_size)
+        result[0] = count_general(partition, target_points, noise_samples, mode, batch_size)
 
     if partition.rectangular or args.debug:
         print('- Mode for rectangular partition')
         i = 1
-        result[1] = count_samples_per_state_rectangular(model, partition, target_points, noise_samples, mode,
-                                                        batch_size)
+        result[1] = count_rectangular(model, partition, target_points, noise_samples, batch_size)
 
     if args.debug:
         assert np.all(result[0] == result[1])
@@ -78,7 +63,21 @@ def compute_samples_per_state(args, model, partition, target_points, noise_sampl
     return result[i]
 
 
-def count_samples_per_state(partition, target_points, noise_samples, mode, batch_size=1000):
+vmap_num_points_in_polytope = jax.jit(jax.vmap(num_points_in_polytope, in_axes=(0, 0, None), out_axes=0))
+
+@jax.jit
+def compute_contained_for_single_action(d, noise_samples, As, bs):
+    succ_samples = d + noise_samples
+    num_samples_per_region = vmap_num_points_in_polytope(As, bs, succ_samples)
+
+    return num_samples_per_region
+
+
+vmap_compute_contained_for_single_action = jax.jit(jax.vmap(compute_contained_for_single_action,
+                                                            in_axes=(0, None, None, None), out_axes=0))
+
+
+def count_general(partition, target_points, noise_samples, mode, batch_size):
 
     @jax.jit
     def loop_body(i, val):
@@ -97,38 +96,41 @@ def count_samples_per_state(partition, target_points, noise_samples, mode, batch
         val = jax.lax.fori_loop(0, len(target_points), loop_body, val)
         (_, _, _, _, num_samples_per_region) = val
 
-    elif mode == 'vmap':
-
-        starts, ends = create_batches(len(target_points), batch_size)
-        num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
-
-        for (i, j) in tqdm(zip(starts, ends)):
-            num_samples_per_region[i:j] = vmap_compute_contained_for_single_action(target_points[i:j],
-                                                                                   noise_samples,
-                                                                                   partition.regions['A'],
-                                                                                   partition.regions['b'])
-
     else:
+        # Use either vmap (if batch size > 1) or plain Python for loop
 
-        num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
+        if batch_size > 1:
+            starts, ends = create_batches(len(target_points), batch_size)
+            num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
 
-        for i, d in tqdm(enumerate(target_points)):
-            # Check if this action is enabled anywhere
-            # if jnp.sum(enabled_actions[:, i]) > 0:
-            num_samples_per_region[i] = compute_contained_for_single_action(d, noise_samples,
-                                                                            partition.regions['A'],
-                                                                            partition.regions['b'])
+            for (i, j) in tqdm(zip(starts, ends)):
+                num_samples_per_region[i:j] = vmap_compute_contained_for_single_action(target_points[i:j],
+                                                                                       noise_samples,
+                                                                                       partition.regions['A'],
+                                                                                       partition.regions['b'])
+
+        else:
+            num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
+            for i, d in tqdm(enumerate(target_points)):
+                # Check if this action is enabled anywhere
+                # if jnp.sum(enabled_actions[:, i]) > 0:
+                num_samples_per_region[i] = compute_contained_for_single_action(d, noise_samples,
+                                                                                partition.regions['A'],
+                                                                                partition.regions['b'])
 
     return np.array(num_samples_per_region)
 
 
-def normalized_sample_count(num_regions, d, noise_samples, lb, ub, number_per_dim, region_idx_array):
+def normalize_and_count(d, num_regions, noise_samples, lb, ub, number_per_dim, region_idx_array):
     '''
     Normalize the given samples, such that each region is a unit hypercube
-    :param samples:
+    :param num_regions:
+    :param d:
+    :param noise_samples:
     :param lb:
     :param ub:
-    :param cell_width:
+    :param number_per_dim:
+    :param region_idx_array:
     :return:
     '''
 
@@ -148,29 +150,41 @@ def normalized_sample_count(num_regions, d, noise_samples, lb, ub, number_per_di
     # Thus, we set the index for these samples to zero, and increment all others by one
     samples_region_idxs = in_partition * (region_idx_array[tuple(samples_idxs.T)] + 1)
 
-    counts = jnp.bincount(samples_region_idxs, length=num_regions + 1)[1:]
+    # Determine counts for each index
+    counts = jnp.bincount(samples_region_idxs, length=784 + 1)[1:]
 
     return counts
 
 
-def count_samples_per_state_rectangular(model, partition, target_points, noise_samples, mode, batch_size=1000):
+def count_rectangular(model, partition, target_points, noise_samples, batch_size):
 
-    num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
+    fn = jax.jit(normalize_and_count)
+    fn_vmap = jax.jit(jax.vmap(normalize_and_count, in_axes=(0, None, None, None, None, None, None), out_axes=0))
 
-    fn_cpu = jax.jit(normalized_sample_count, backend='gpu', static_argnums=0)
+    # If batch size is > 1, then use vmap version. Otherwise, use plain Python for loop.
+    if batch_size > 1:
+        starts, ends = create_batches(len(target_points), batch_size)
+        num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
+        for (i, j) in tqdm(zip(starts, ends)):
+            num_samples_per_region[i:j] = fn_vmap(target_points[i:j],
+                                             len(partition.regions['idxs']),
+                                             noise_samples,
+                                             model.partition['boundary'][0],
+                                             model.partition['boundary'][1],
+                                             model.partition['number_per_dim'],
+                                             partition.region_idx_array)
 
-    for i, d in tqdm(enumerate(target_points)):
-
-        num_samples_per_region[i] = fn_cpu(
-                                         num_regions = len(partition.regions['idxs']),
-                                         d = d,
-                                         noise_samples = noise_samples,
-                                         lb = model.partition['boundary'][0],
-                                         ub = model.partition['boundary'][1],
-                                         number_per_dim = model.partition['number_per_dim'],
-                                         region_idx_array = partition.region_idx_array)
-
-    print('- Number of times function was compiled:', fn_cpu._cache_size())
+    else:
+        num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
+        for i, d in tqdm(enumerate(target_points)):
+            num_samples_per_region[i] = fn(d = d,
+                                           num_regions = len(partition.regions['idxs']),
+                                           noise_samples = noise_samples,
+                                           lb = model.partition['boundary'][0],
+                                           ub = model.partition['boundary'][1],
+                                           number_per_dim = model.partition['number_per_dim'],
+                                           region_idx_array = partition.region_idx_array)
+        print('-- Number of times function was compiled:', fn._cache_size())
 
     return np.array(num_samples_per_region)
 
