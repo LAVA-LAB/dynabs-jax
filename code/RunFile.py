@@ -28,8 +28,7 @@ for key,val in vars(args).items():
 # Define and parse model
 base_model = Drone3D()
 model = parse_model(base_model)
-
-args.debug= True
+# args.debug= True
 
 partition = RectangularPartition(number_per_dim=model.partition['number_per_dim'],
                                  partition_boundary=model.partition['boundary'],
