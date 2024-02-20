@@ -53,7 +53,8 @@ print(f"(Number of states: {len(partition.regions['idxs'])})\n")
 
 actions = RectangularTarget(target_points=partition.regions['centers'],
                             model=model)
-actions.test_backwardset(idx=10, model=model)
+if args.debug:
+    actions.test_backwardset(idx=10, model=model)
 print(f"(Number of actions: {len(actions.target_points)})\n")
 
 enabled_actions = compute_enabled_actions(jnp.array(actions.backreach['A']),
