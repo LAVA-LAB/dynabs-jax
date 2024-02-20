@@ -4,7 +4,6 @@ import jax
 import os
 import time
 from pathlib import Path
-from benchmarks.Drone import Drone2D, Drone3D
 from core.options import parse_arguments
 from core.model import parse_model
 from core.partition import RectangularPartition
@@ -12,6 +11,8 @@ from core.actions import RectangularTarget, compute_enabled_actions
 from core.probabilities import sample_noise, count_samples_per_region, compute_scenario_interval_table, \
     samples_to_intervals
 from core.imdp import BuilderStorm, BuilderPrism
+
+import benchmarks
 
 args = parse_arguments()
 args.debug = True
@@ -34,9 +35,11 @@ print('\n==============================\n')
 
 # Define and parse model
 if args.model == 'Drone2D':
-    base_model = Drone2D()
+    base_model = benchmarks.Drone.Drone2D()
 elif args.model == 'Drone3D':
-    base_model = Drone3D()
+    base_model = benchmarks.Drone.Drone3D()
+elif args.model == 'Spacecraft':
+    base_model = benchmarks.Spacecraft.Spacecraft()
 else:
     assert False, f"The passed model '{args.model}' could not be found"
 model = parse_model(base_model)
