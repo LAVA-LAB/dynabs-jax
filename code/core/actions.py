@@ -115,14 +115,16 @@ def compute_enabled_actions(As, bs, region_vertices, mode = 'fori_loop', batch_s
         # Use either vmap (if batch size > 1) or plain Python for loop
         if batch_size == 1:
             enabled_actions = np.full((len(region_vertices), len(As)), fill_value=False)
-            for (i, vertices) in tqdm(enumerate(region_vertices)):
+            pbar = tqdm(enumerate(region_vertices), total=len(region_vertices))
+            for (i, vertices) in pbar:
                 enabled_actions[i] = vmap_all_points_in_polytope(As, bs, vertices)
 
         else:
             starts, ends = create_batches(len(region_vertices), batch_size)
             enabled_actions = np.full((len(region_vertices), len(As)), fill_value=False)
 
-            for (i, j) in tqdm(zip(starts, ends), total=len(starts)):
+            pbar = tqdm(zip(starts, ends), total=len(starts))
+            for (i, j) in pbar:
                 enabled_actions[i:j] = vmap_compute_actions_enabled_in_region(As, bs, region_vertices[i:j])
 
     print(f'- Enabled actions computed (took {(time.time() - t):.3f} sec.)')
