@@ -1,0 +1,11 @@
+name = "abstraction"
+uuid = "8a24f149-2b55-4337-8432-e32b35760367"
+authors = ["tbadings "]
+version = "0.1.0"
+
+[deps]
+LazyGrids = "7031d0ef-c40d-4431-b2f8-61a8d2f650db"
+LazySets = "b4f0291d-fe17-52bc-9479-3d1a343d9043"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Polyhedra = "67491407-f73d-577b-9b50-8179a7c68029"
+ProgressBars = "49802e3a-d2f1-5c88-81d8-b72133a6f568"
