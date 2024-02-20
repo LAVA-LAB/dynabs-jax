@@ -118,7 +118,7 @@ def count_general(partition, target_points, noise_samples, mode, batch_size):
                                                                                 partition.regions['A'],
                                                                                 partition.regions['b'])
 
-    return np.array(num_samples_per_region)
+    return num_samples_per_region
 
 
 def normalize_and_count(d, num_regions, noise_samples, lb, ub, number_per_dim, region_idx_array):
@@ -191,7 +191,7 @@ def count_rectangular(model, partition, target_points, noise_samples, batch_size
                                            region_idx_array = partition.region_idx_array)
         print('-- Number of times function was compiled:', fn._cache_size())
 
-    return np.array(num_samples_per_region)
+    return num_samples_per_region
 
 
 def samples_to_intervals(num_samples, num_samples_per_region, interval_table, goal_bool, critical_bool):

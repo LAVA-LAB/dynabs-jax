@@ -4,6 +4,7 @@ import jax
 import itertools
 import time
 from tqdm import tqdm
+from .polytope import hyperrectangles_isdisjoint_multi
 
 EPS = 1e-3
 
@@ -44,7 +45,6 @@ def center2halfspace(center, cell_width):
     return A,b
 
 
-
 # Vectorized function over different polytopes
 from .polytope import points_in_polytope
 vmap_points_in_polytope = jax.jit(jax.vmap(points_in_polytope, in_axes=(0, 0, None), out_axes=0))
@@ -63,6 +63,7 @@ def check_if_region_in_goal(goals_A, goals_b, points):
 
     # If any goal region is contained in the polytope, then set current polytope as goal
     return jnp.any(all_points_contained)
+
 
 # Vectorized function over different sets of points
 vmap_check_if_region_in_goal = jax.vmap(check_if_region_in_goal, in_axes=(None, None, 0), out_axes=0)
@@ -89,7 +90,6 @@ class RectangularPartition(object):
         t = time.time()
         # From the partition boundary, determine where the first grid centers are placed
         self.cell_width = (partition_boundary[1] - partition_boundary[0]) / number_per_dim
-        print('- Cell width:', self.cell_width)
         lb_center = partition_boundary[0] + self.cell_width * 0.5
         ub_center = partition_boundary[1] - self.cell_width * 0.5
 
@@ -110,7 +110,6 @@ class RectangularPartition(object):
 
         # Now scale the unit-cube partition appropriately
         centers = centers_unit * self.cell_width + lb_center
-        print('centers:', centers)
 
         region_idxs = np.arange(len(centers))
         lower_bounds = centers - self.cell_width / 2
@@ -162,50 +161,13 @@ class RectangularPartition(object):
         print(f"-- Number of goal regions: {len(self.goal['idxs'])}")
 
         t = time.time()
-        # Determine critical regions by sampling within critical regions and check if any points are contained
-        # TODO: Improve by removing the sampling step
-        samples = [[]]*len(critical_regions)
-        for i,critical in enumerate(critical_regions):
-            # Size must be chosen small enough to ensure correct computation
-            size = np.array((critical[1] - critical[0]) / (0.9 * self.cell_width) + 1, dtype=int)
-            samples[i] = define_grid_jax(critical[0] + EPS, critical[1] - EPS, size)
-        critical_samples = jnp.concatenate(samples)
-        print(f'- Samples for computing critical regions defined (took {(time.time()-t):.3f} sec.)')
+        # Check which regions (hyperrectangles) are *not* disjoint from the critical regions (also hyperrectangles)
+        critical_lbs = critical_regions[:,0,:]
+        critical_ubs = critical_regions[:,1,:]
 
-        self.critical_samples = critical_samples
-
-        @jax.jit
-        def loop_body(i, val):
-            As, bs, critical_samples, bools = val
-            bool = any_points_in_polytope(As[i], bs[i], critical_samples)
-            bools = bools.at[i].set(bool)
-            return (As, bs, critical_samples, bools)
-
-        # Check for each element of the partition if any critical sample is contained (if so, it's a critical region)
-        t = time.time()
-
-        if mode == 'fori_loop':
-
-            critical_regions_bools = jnp.full(len(self.regions['A']), fill_value=True)
-            val = (self.regions['A'], self.regions['b'], critical_samples, critical_regions_bools)
-            val = jax.lax.fori_loop(0, len(self.regions['A']), loop_body, val)
-            (_, _, _, critical_regions_bools) = val
-
-        elif mode == 'vmap':
-
-            critical_regions_bools = vmap_any_points_in_polytope(self.regions['A'], self.regions['b'],
-                                                                 critical_samples)
-
-        else:
-
-            critical_regions_bools = np.full(len(self.regions['A']), fill_value=True)
-
-            for i, (A, b) in tqdm(enumerate(zip(self.regions['A'], self.regions['b']))):
-                critical_regions_bools[i] = any_points_in_polytope(A, b, critical_samples)
-
-            # critical_regions_bools = np.array([any_points_in_polytope(A, b, critical_samples)
-            #                                    for A,b in zip(self.regions['A'], self.regions['b'])])
-
+        vfun = jax.jit(jax.vmap(hyperrectangles_isdisjoint_multi, in_axes=(0, 0, None, None), out_axes=0))
+        critical_regions_bools = ~vfun(self.regions['lower_bounds'], self.regions['upper_bounds'],
+                                      critical_lbs + EPS, critical_ubs - EPS)
         critical_regions_idxs = region_idxs[critical_regions_bools]
         critical_regions_centers = centers[critical_regions_bools]
         print(f'- Critical regions defined (took {(time.time() - t):.3f} sec.)')
