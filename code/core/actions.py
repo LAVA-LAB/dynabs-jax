@@ -47,7 +47,8 @@ class RectangularTarget(object):
         t = time.time()
         A = [[]] * len(vertices)
         b = [[]] * len(vertices)
-        for i,verts in enumerate(vertices):
+        for i,verts in tqdm(enumerate(vertices)):
+            print(verts)
             A[i], b[i] = compute_polytope_halfspaces(verts)
         print(f'- Halfspace representations computed (took {(time.time() - t):.3f} sec.)')
 
