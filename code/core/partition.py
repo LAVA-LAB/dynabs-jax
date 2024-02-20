@@ -108,6 +108,7 @@ class RectangularPartition(object):
         centers_numpy = np.array(centers_unit, dtype=int)
         self.region_idx_array = np.zeros(number_per_dim, dtype=int)
         self.region_idx_array[tuple(centers_numpy.T)] = np.arange(len(centers_numpy))
+        print('region_idx_array:', self.region_idx_array)
 
         # Now scale the unit-cube partition appropriately
         centers = centers_unit * self.cell_width + lb_center
