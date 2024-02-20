@@ -35,11 +35,11 @@ print('\n==============================\n')
 
 # Define and parse model
 if args.model == 'Drone2D':
-    base_model = benchmarks.Drone.Drone2D()
+    base_model = benchmarks.Drone2D()
 elif args.model == 'Drone3D':
-    base_model = benchmarks.Drone.Drone3D()
+    base_model = benchmarks.Drone3D()
 elif args.model == 'Spacecraft':
-    base_model = benchmarks.Spacecraft.Spacecraft()
+    base_model = benchmarks.Spacecraft()
 else:
     assert False, f"The passed model '{args.model}' could not be found"
 model = parse_model(base_model)
