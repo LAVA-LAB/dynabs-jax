@@ -164,7 +164,7 @@ class BuilderPrism:
         # Set some constants
         self.absorbing_state = np.max(states) + 1
 
-        print('--- Writing PRISM states file')
+        print('- Writing PRISM states file')
 
         ### Write states file
         PRISM_statefile = str(self.out_path + ".sta")
@@ -178,7 +178,7 @@ class BuilderPrism:
         # Write content to file
         writeFile(PRISM_statefile, 'w', state_file_string)
 
-        print('--- Writing PRISM label file')
+        print('- Writing PRISM label file')
 
         ### Write label file
         PRISM_labelfile = str(self.out_path + ".lab")
@@ -206,7 +206,7 @@ class BuilderPrism:
         # Write content to file
         writeFile(PRISM_labelfile, 'w', label_full)
 
-        print('--- Writing PRISM transition file')
+        print('- Writing PRISM transition file')
 
         ### Write transition file
         PRISM_transitionfile = str(self.out_path + ".tra")
@@ -271,9 +271,10 @@ class BuilderPrism:
         # Header contains nr of states, choices, and transitions
         header = str(states_created) + ' ' + str(nr_choices_absolute) + ' ' + str(nr_transitions_absolute) + '\n'
 
-        print('---- iMDP states:', states_created)
-        print('---- iMDP choices:', nr_choices_absolute)
-        print('---- iMDP transitions:', nr_transitions_absolute)
+        print('iMDP statistics:')
+        print('- # states:', states_created)
+        print('- # choices:', nr_choices_absolute)
+        print('- # transitions:', nr_transitions_absolute)
 
         # Write content to file
         writeFile(PRISM_transitionfile, 'w', header + transition_file_list)
