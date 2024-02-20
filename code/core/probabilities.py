@@ -111,7 +111,7 @@ def count_general(partition, target_points, noise_samples, mode, batch_size):
 
         else:
             num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
-            for i, d in tqdm(enumerate(target_points)):
+            for i, d in tqdm(enumerate(target_points), total=len(target_points)):
                 # Check if this action is enabled anywhere
                 # if jnp.sum(enabled_actions[:, i]) > 0:
                 num_samples_per_region[i] = compute_contained_for_single_action(d, noise_samples,
@@ -181,7 +181,7 @@ def count_rectangular(model, partition, target_points, noise_samples, batch_size
         fn = jax.jit(normalize_and_count, static_argnums=(1))
 
         num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
-        for i, d in tqdm(enumerate(target_points)):
+        for i, d in tqdm(enumerate(target_points), total=len(target_points)):
             num_samples_per_region[i] = fn(d = d,
                                            num_regions = len(partition.regions['idxs']),
                                            noise_samples = noise_samples,
@@ -206,6 +206,7 @@ def samples_to_intervals(num_samples, num_samples_per_region, interval_table, go
     # print('Samples per region shape:', num_samples_per_region.shape)
     # print('Samples per region sum:', np.sum(num_samples_per_region, axis=1))
 
+    print('- Determine number of samples in absorbing state...')
     num_samples_absorbing = num_samples - np.sum(num_samples_per_region, axis=1)
 
     # Exclude critical regions and goal regions
@@ -220,18 +221,20 @@ def samples_to_intervals(num_samples, num_samples_per_region, interval_table, go
     # P_goal = interval_table[num_samples - num_samples_goal]
     # P_critical = interval_table[num_samples - num_samples_critical]
 
-    # print('Table size:', interval_table.shape)
-    # print('Min/max index:', np.min(num_samples_absorbing), np.max(num_samples_absorbing))
-
+    print('- Determine transition probability interval matrices...')
     P_absorbing = interval_table[num_samples - num_samples_absorbing]
     P_full = interval_table[num_samples - num_samples_per_region]
 
-    P_full = np.maximum(1e-6, np.round(P_full, 6))
-    P_absorbing = np.maximum(1e-6, np.round(P_absorbing, 6))
+    decmin = 6
+    pmin = 10**-decmin
+    print(f'- Put minimum (nonzero) probability to {pmin}')
+    P_full = np.maximum(pmin, np.round(P_full, decmin))
+    P_absorbing = np.maximum(pmin, np.round(P_absorbing, decmin))
 
     # If the sample count was zero, force probability to zero
     P_full[num_samples_per_region == 0] = 0
 
+    print('- Perform checks...')
     # Perform checks on the transition probability intervals
     assert len(P_full) == len(P_absorbing)
     assert 0 <= np.all(P_full) <= 1
