@@ -1,6 +1,7 @@
 import numpy as np
 import scipy
 
+
 class Spacecraft(object):
 
     def __init__(self):
@@ -12,7 +13,6 @@ class Spacecraft(object):
         self.set_spec()
 
     def set_model(self):
-
         # Set value of delta (how many time steps are grouped together)
         # Used to make the model fully actuated
         self.lump = 2
@@ -56,7 +56,6 @@ class Spacecraft(object):
         return
 
     def set_spec(self):
-
         self.partition = {}
         self.targets = {}
 
@@ -73,7 +72,8 @@ class Spacecraft(object):
         ], dtype=float)
 
         self.critical = np.array([
-            [[-1, 12.4-8*0.8, -2, -4, -4, -2], [1, 12.4, 2, 4, 4, 2]],
+            [[-1, 12.4 - 8 * 0.8, -2, -4, -4, -2], [1, 12.4, 2, 4, 4, 2]],
         ], dtype=float)
 
         return
+ 

@@ -8,6 +8,7 @@ from .polytope import hyperrectangles_isdisjoint_multi
 
 EPS = 1e-3
 
+
 @jax.jit
 def meshgrid_jax(points, size):
     '''
@@ -23,11 +24,13 @@ def meshgrid_jax(points, size):
 
     return grid
 
+
 def define_grid_jax(low, high, size):
     points = [np.linspace(low[i], high[i], size[i]) for i in range(len(size))]
     grid = meshgrid_jax(points, size)
 
     return grid
+
 
 @jax.jit
 def center2halfspace(center, cell_width):
@@ -42,19 +45,21 @@ def center2halfspace(center, cell_width):
     A = jnp.concatenate((A1, A2))
     b = jnp.concatenate((b1, b2))
 
-    return A,b
+    return A, b
 
 
 # Vectorized function over different polytopes
 from .polytope import points_in_polytope
+
 vmap_points_in_polytope = jax.jit(jax.vmap(points_in_polytope, in_axes=(0, 0, None), out_axes=0))
 
 from .polytope import any_points_in_polytope
+
 vmap_any_points_in_polytope = jax.jit(jax.vmap(any_points_in_polytope, in_axes=(0, 0, None), out_axes=0))
+
 
 @jax.jit
 def check_if_region_in_goal(goals_A, goals_b, points):
-
     # Vectorized over all goal regions
     points_contained = vmap_points_in_polytope(goals_A, goals_b, points)
 
@@ -68,6 +73,7 @@ def check_if_region_in_goal(goals_A, goals_b, points):
 # Vectorized function over different sets of points
 vmap_check_if_region_in_goal = jax.vmap(check_if_region_in_goal, in_axes=(None, None, 0), out_axes=0)
 
+
 @jax.jit
 def get_vertices_from_bounds(lb, ub):
     # Stack lower and upper bounds in one array
@@ -78,10 +84,10 @@ def get_vertices_from_bounds(lb, ub):
 
     return vertices
 
+
 class RectangularPartition(object):
 
-    def __init__(self, number_per_dim, partition_boundary, goal_regions, critical_regions, mode = 'fori_loop'):
-
+    def __init__(self, number_per_dim, partition_boundary, goal_regions, critical_regions, mode='fori_loop'):
         self.rectangular = True
 
         print('Define rectangular partition...')
@@ -95,7 +101,7 @@ class RectangularPartition(object):
 
         # First define a grid where each region is a unit cube
         lb_unit = np.zeros(len(lb_center), dtype=int)
-        ub_unit = np.array(number_per_dim-1, dtype=int)
+        ub_unit = np.array(number_per_dim - 1, dtype=int)
         centers_unit = define_grid_jax(lb_unit, ub_unit, number_per_dim)
 
         # TODO: Remove this
@@ -118,13 +124,13 @@ class RectangularPartition(object):
         # Determine the vertices of all partition elements
         vmap_get_vertices_from_bounds = jax.vmap(get_vertices_from_bounds, in_axes=(0, 0), out_axes=0)
         all_vertices = vmap_get_vertices_from_bounds(lower_bounds, upper_bounds)
-        print(f'- Grid points defined (took {(time.time()-t):.3f} sec.)')
-        
+        print(f'- Grid points defined (took {(time.time() - t):.3f} sec.)')
+
         t = time.time()
         # Determine halfspace (Ax <= b) inequalities
         vmap_center2halfspace = jax.vmap(center2halfspace, in_axes=(0, None), out_axes=(0, 0))
         all_A, all_b = vmap_center2halfspace(centers, self.cell_width)
-        print(f'- Halfspace inequalities (Ax <= b) defined (took {(time.time()-t):.3f} sec.)')
+        print(f'- Halfspace inequalities (Ax <= b) defined (took {(time.time() - t):.3f} sec.)')
 
         self.regions = {
             'centers': centers,
@@ -139,11 +145,11 @@ class RectangularPartition(object):
         t = time.time()
         # Compute halfspace representation of the goal regions
         goal_centers = np.zeros((len(goal_regions), len(number_per_dim)))
-        goal_widths  = np.zeros((len(goal_regions), len(number_per_dim)))
-        for i,goal in enumerate(goal_regions):
+        goal_widths = np.zeros((len(goal_regions), len(number_per_dim)))
+        for i, goal in enumerate(goal_regions):
             goal_centers[i] = (goal[1] + goal[0]) / 2
             goal_widths[i] = (goal[1] - goal[0]) + EPS
-
+ 
         vmap_center2halfspace = jax.vmap(center2halfspace, in_axes=(0, 0), out_axes=(0, 0))
         goals_A, goals_b = vmap_center2halfspace(goal_centers, goal_widths)
 
@@ -151,7 +157,7 @@ class RectangularPartition(object):
         goal_regions_bools = vmap_check_if_region_in_goal(goals_A, goals_b, all_vertices)
         goal_regions_idxs = region_idxs[goal_regions_bools]
         goal_regions_centers = centers[goal_regions_bools]
-        print(f'- Goal regions defined (took {(time.time()-t):.3f} sec.)')
+        print(f'- Goal regions defined (took {(time.time() - t):.3f} sec.)')
 
         self.goal = {
             'bools': goal_regions_bools,
@@ -162,12 +168,12 @@ class RectangularPartition(object):
 
         t = time.time()
         # Check which regions (hyperrectangles) are *not* disjoint from the critical regions (also hyperrectangles)
-        critical_lbs = critical_regions[:,0,:]
-        critical_ubs = critical_regions[:,1,:]
+        critical_lbs = critical_regions[:, 0, :]
+        critical_ubs = critical_regions[:, 1, :]
 
         vfun = jax.jit(jax.vmap(hyperrectangles_isdisjoint_multi, in_axes=(0, 0, None, None), out_axes=0))
         critical_regions_bools = ~vfun(self.regions['lower_bounds'], self.regions['upper_bounds'],
-                                      critical_lbs + EPS, critical_ubs - EPS)
+                                       critical_lbs + EPS, critical_ubs - EPS)
         critical_regions_idxs = region_idxs[critical_regions_bools]
         critical_regions_centers = centers[critical_regions_bools]
         print(f'- Critical regions defined (took {(time.time() - t):.3f} sec.)')

@@ -8,13 +8,14 @@ from tqdm import tqdm
 
 from .utils import create_batches
 
+
 @jax.jit
 def backward_reach(target, A_inv, B, Q_flat, input_vertices):
-
     inner = target - jnp.matmul(B, input_vertices.T).T - Q_flat
     vertices = jnp.matmul(A_inv, inner.T).T
 
     return vertices
+
 
 def compute_polytope_halfspaces(vertices):
     '''Compute the halfspace representation (H-rep) of a polytope.'''
@@ -28,7 +29,8 @@ def compute_polytope_halfspaces(vertices):
     # the polyhedron is given by b + A x >= 0 where bA = [b|A]
     b, A = np.array(bA[:, 0]), -np.array(bA[:, 1:])
 
-    return A,b
+    return A, b
+
 
 class RectangularTarget(object):
 
@@ -42,14 +44,14 @@ class RectangularTarget(object):
         t = time.time()
         self.target_points = target_points
         vertices = vmap_backward_reach(target_points, model.A_inv, model.B, model.Q_flat, model.uVertices)
-        print(f'- Backward reachable sets computed (took {(time.time()-t):.3f} sec.)')
+        print(f'- Backward reachable sets computed (took {(time.time() - t):.3f} sec.)')
 
         print('- Computing halfspace representations...')
         t = time.time()
         A = [[]] * len(vertices)
         b = [[]] * len(vertices)
         pbar = tqdm(enumerate(vertices), total=len(vertices))
-        for i,verts in pbar:
+        for i, verts in pbar:
             A[i], b[i] = compute_polytope_halfspaces(verts)
         print(f'- Halfspace representations computed (took {(time.time() - t):.3f} sec.)')
 
@@ -73,7 +75,7 @@ class RectangularTarget(object):
         :return:
         '''
 
-        for i,(x,u) in enumerate(zip(self.backreach['vertices'][idx], model.uVertices)):
+        for i, (x, u) in enumerate(zip(self.backreach['vertices'][idx], model.uVertices)):
             point = model.A @ x + model.B @ u + model.Q_flat
 
             assert np.all(np.isclose(point, self.target_points[idx])), \
@@ -83,15 +85,20 @@ class RectangularTarget(object):
 
         return
 
+
 # Vectorized function over different polytopes
 from .polytope import all_points_in_polytope
+
 vmap_all_points_in_polytope = jax.jit(jax.vmap(all_points_in_polytope, in_axes=(0, 0, None), out_axes=0))
-vmap_compute_actions_enabled_in_region = jax.jit(jax.vmap(vmap_all_points_in_polytope, in_axes=(None, None, 0), out_axes=0))
+vmap_compute_actions_enabled_in_region = jax.jit(
+    jax.vmap(vmap_all_points_in_polytope, in_axes=(None, None, 0), out_axes=0))
 
 vmap_all_points_in_polytope2 = jax.jit(jax.vmap(all_points_in_polytope, in_axes=(None, None, 0), out_axes=0))
-vmap_compute_actions_enabled_in_region2 = jax.jit(jax.vmap(vmap_all_points_in_polytope2, in_axes=(0, 0, None), out_axes=0))
+vmap_compute_actions_enabled_in_region2 = jax.jit(
+    jax.vmap(vmap_all_points_in_polytope2, in_axes=(0, 0, None), out_axes=0))
 
-def compute_enabled_actions(As, bs, region_vertices, mode = 'fori_loop', batch_size=1000):
+
+def compute_enabled_actions(As, bs, region_vertices, mode='fori_loop', batch_size=1000):
     print('Compute subset of enabled actions in each partition element...')
     t_total = time.time()
 

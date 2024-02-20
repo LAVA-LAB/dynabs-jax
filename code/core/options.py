@@ -1,7 +1,5 @@
 import argparse
-import os
-from pathlib import Path
-import jax
+
 
 def parse_arguments():
     """
@@ -34,6 +32,8 @@ def parse_arguments():
 
     parser.add_argument('--mode', type=str, default='fori_loop',
                         help="Should be one of 'fori_loop', 'vmap', 'python'")
+    parser.add_argument('--batch_size', type=int, default=1,
+                        help="Batch size for functions vectorized with Jax")
 
     # Parse arguments
     args = parser.parse_args()

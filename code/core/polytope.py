@@ -2,6 +2,7 @@ import jax
 import jax.numpy as jnp
 from functools import partial
 
+
 def points_in_polytope(A, b, points):
     ''' Check if polytope defined by Ax <= b contains given list of points '''
 
@@ -13,6 +14,7 @@ def points_in_polytope(A, b, points):
 
     return points_contained
 
+
 def any_points_in_polytope(A, b, points):
     ''' Check if polytope defined by Ax <= b contains given list of points '''
 
@@ -20,9 +22,10 @@ def any_points_in_polytope(A, b, points):
     bools = (jnp.matmul(A, points.T).T <= b)
 
     # A point is contained if every constraint is satisfied
-    points_contained = jnp.min(bools, axis=1) #jnp.all(bools, axis=1)
+    points_contained = jnp.min(bools, axis=1)  # jnp.all(bools, axis=1)
 
-    return jnp.max(points_contained) #jnp.any(points_contained)
+    return jnp.max(points_contained)  # jnp.any(points_contained)
+
 
 def all_points_in_polytope(A, b, points):
     ''' Check if polytope defined by Ax <= b contains given list of points '''
@@ -36,6 +39,7 @@ def all_points_in_polytope(A, b, points):
 
     return jnp.min(bools)
 
+
 def num_points_in_polytope(A, b, points):
     ''' Check if polytope defined by Ax <= b contains given list of points '''
 
@@ -43,9 +47,10 @@ def num_points_in_polytope(A, b, points):
     bools = (jnp.matmul(A, points.T).T < b)
 
     # A point is contained if every constraint is satisfied
-    points_contained = jnp.min(bools, axis=1) #jnp.all(bools, axis=1)
+    points_contained = jnp.min(bools, axis=1)  # jnp.all(bools, axis=1)
 
     return jnp.sum(points_contained)
+
 
 def hyperrectangles_isdisjoint(lb1, ub1, lb2, ub2):
     '''
@@ -68,7 +73,9 @@ def hyperrectangles_isdisjoint(lb1, ub1, lb2, ub2):
 
     return empty_intersection
 
+
 vmap_hyperrectangles_isdisjoint = jax.jit(jax.vmap(hyperrectangles_isdisjoint, in_axes=(None, None, 0, 0), out_axes=0))
+
 
 def hyperrectangles_isdisjoint_multi(lb1, ub1, lbs2, ubs2):
     '''

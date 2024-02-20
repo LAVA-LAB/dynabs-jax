@@ -21,6 +21,7 @@ args.jax_key = jax.random.PRNGKey(args.seed)
 # Configure jax to use Float64 (otherwise, GPU computations may yield slightly different results)
 if args.debug:
     from jax import config
+
     config.update("jax_enable_x64", True)
 
 # Set current working directory
@@ -28,8 +29,8 @@ args.cwd = os.path.dirname(os.path.abspath(__file__))
 args.root_dir = Path(args.cwd)
 
 print('Run using arguments:')
-for key,val in vars(args).items():
-    print(' - `'+str(key)+'`: '+str(val))
+for key, val in vars(args).items():
+    print(' - `' + str(key) + '`: ' + str(val))
 print('\n==============================\n')
 
 # Define and parse model
@@ -47,7 +48,7 @@ partition = RectangularPartition(number_per_dim=model.partition['number_per_dim'
                                  partition_boundary=model.partition['boundary'],
                                  goal_regions=model.goal,
                                  critical_regions=model.critical,
-                                 mode = 'python')
+                                 mode='python')
 print(f"(Number of states: {len(partition.regions['idxs'])})\n")
 
 actions = RectangularTarget(target_points=partition.regions['centers'],
@@ -59,15 +60,15 @@ print(f"(Number of actions: {len(actions.target_points)})\n")
 enabled_actions = compute_enabled_actions(jnp.array(actions.backreach['A']),
                                           jnp.array(actions.backreach['b']),
                                           np.array(partition.regions['all_vertices']),
-                                          mode = 'vmap',
-                                          batch_size = 1)
+                                          mode='vmap',
+                                          batch_size=args.batch_size)
 
 print(f"(Number of enabled actions: {np.sum(np.any(enabled_actions, axis=0))})\n")
 
 # Compute noise samples
 samples = sample_noise(model, args.jax_key, args.num_samples)
 num_samples_per_state = count_samples_per_region(args, model, partition, actions.backreach['target_points'],
-                            samples, mode = 'vmap', batch_size=1)
+                                                 samples, mode='vmap', batch_size=args.batch_size)
 
 table_filename = f'intervals_N={args.num_samples}_beta={args.confidence}.csv'
 interval_table = compute_scenario_interval_table(Path(str(args.root_dir), 'interval_tables', table_filename),
@@ -78,7 +79,8 @@ P_full, P_absorbing = samples_to_intervals(args.num_samples,
                                            num_samples_per_state,
                                            interval_table,
                                            partition.goal['bools'],
-                                           partition.critical['bools'])
+                                           partition.critical['bools'],
+                                           round_probabilities=True)
 
 # %%
 

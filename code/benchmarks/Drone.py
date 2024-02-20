@@ -1,6 +1,7 @@
 import numpy as np
 import scipy
 
+
 class Drone2D(object):
 
     def __init__(self):
@@ -12,7 +13,6 @@ class Drone2D(object):
         self.set_spec()
 
     def set_model(self):
-
         # Set value of delta (how many time steps are grouped together)
         # Used to make the model fully actuated
         self.lump = 2
@@ -43,7 +43,6 @@ class Drone2D(object):
         return
 
     def set_spec(self):
-
         self.partition = {}
         self.targets = {}
 
@@ -66,7 +65,6 @@ class Drone2D(object):
         return
 
 
-
 class Drone3D(object):
 
     def __init__(self):
@@ -78,7 +76,6 @@ class Drone3D(object):
         self.set_spec()
 
     def set_model(self):
-
         # Set value of delta (how many time steps are grouped together)
         # Used to make the model fully actuated
         self.lump = 2
@@ -109,7 +106,6 @@ class Drone3D(object):
         return
 
     def set_spec(self):
-
         self.partition = {}
         self.targets = {}
 

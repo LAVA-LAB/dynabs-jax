@@ -4,8 +4,8 @@ import pandas as pd
 from .utils import writeFile
 from tqdm import tqdm
 
-class BuilderStorm:
 
+class BuilderStorm:
     """
     Construct iMDP
     """
@@ -31,7 +31,7 @@ class BuilderStorm:
         # Reshape all probability intervals
         print('- Generate pycarl intervals...')
         P_full_flat = P_full.reshape(-1, 2)
-        P_full_flat = P_full_flat[P_full_flat[:, 1] > 0,:]
+        P_full_flat = P_full_flat[P_full_flat[:, 1] > 0, :]
         P_absorbing_flat = P_absorbing.reshape(-1, 2)
         P_absorbing_flat = P_absorbing_flat[P_absorbing_flat[:, 1] > 0, :]
         P_unique = np.unique(np.vstack((P_full_flat, P_absorbing_flat)), axis=0)
@@ -67,7 +67,7 @@ class BuilderStorm:
 
             # If no actions are enabled at all, add a deterministic transition to the absorbing state
             if len(enabled_in_s) == 0 or s in critical_regions or s in goal_regions:
-                self.builder.add_next_value(row, self.absorbing_state, self.intervals_raw[(1,1)])
+                self.builder.add_next_value(row, self.absorbing_state, self.intervals_raw[(1, 1)])
                 row += 1
 
             else:
@@ -98,7 +98,7 @@ class BuilderStorm:
 
         for ss in [self.absorbing_state]:
             self.builder.new_row_group(row)
-            self.builder.add_next_value(row, ss, self.intervals_raw[(1,1)])
+            self.builder.add_next_value(row, ss, self.intervals_raw[(1, 1)])
             row += 1
             states_created += 1
 
@@ -148,9 +148,7 @@ class BuilderStorm:
         self.results = np.array(result_generator.get_values())[:self.nr_states]
 
 
-
 class BuilderPrism:
-
     """
     Construct iMDP
     """
@@ -174,7 +172,7 @@ class BuilderPrism:
         # Define tuple of state variables (for header in PRISM state file)
         state_var_string = ['(s)']
         state_file_content = [f'{str(i)}:({str(i)})' for i in states] + \
-                                [f'{str(self.absorbing_state)}:({str(self.absorbing_state)})']
+                             [f'{str(self.absorbing_state)}:({str(self.absorbing_state)})']
         state_file_string = '\n'.join(state_var_string + state_file_content)
 
         # Write content to file
@@ -239,16 +237,16 @@ class BuilderPrism:
                 substring = ['' for i in range(len(enabled_in_s))]
 
                 # For every enabled action
-                for a_idx,a in enumerate(enabled_in_s):
-
+                for a_idx, a in enumerate(enabled_in_s):
                     # Define name of action
                     actionLabel = "a_" + str(a)
 
                     # Absorbing state transition
-                    str_main = [f'{s} {choice} {ss} [{P_full[a,ss,0]},{P_full[a,ss,1]}] {actionLabel}'
+                    str_main = [f'{s} {choice} {ss} [{P_full[a, ss, 0]},{P_full[a, ss, 1]}] {actionLabel}'
                                 for ss in states if P_full[a, ss, 1] > 0]
 
-                    str_abs = [f'{s} {choice} {self.absorbing_state} [{P_absorbing[a, 0]},{P_absorbing[a, 1]}] {actionLabel}']
+                    str_abs = [
+                        f'{s} {choice} {self.absorbing_state} [{P_absorbing[a, 0]},{P_absorbing[a, 1]}] {actionLabel}']
 
                     # Increase choice counter
                     choice += 1
@@ -280,7 +278,6 @@ class BuilderPrism:
 
         # Write content to file
         writeFile(PRISM_transitionfile, 'w', header + transition_file_list)
-
 
         ### Write specification file
         self.specification = 'Pmaxmin=? [F "reached" ]'

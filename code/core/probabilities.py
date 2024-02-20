@@ -16,7 +16,6 @@ from .polytope import num_points_in_polytope
 
 
 def compute_scenario_interval_table(filepath, num_samples, confidence_level):
-
     if not os.path.isfile(filepath):
 
         print('The following table file does not exist:' + str(filepath))
@@ -37,7 +36,6 @@ def compute_scenario_interval_table(filepath, num_samples, confidence_level):
 
 
 def count_samples_per_region(args, model, partition, target_points, noise_samples, mode, batch_size=1000):
-
     print('Compute number of successor state samples in each partition element...')
     t = time.time()
 
@@ -65,6 +63,7 @@ def count_samples_per_region(args, model, partition, target_points, noise_sample
 
 vmap_num_points_in_polytope = jax.jit(jax.vmap(num_points_in_polytope, in_axes=(0, 0, None), out_axes=0))
 
+
 @jax.jit
 def compute_contained_for_single_action(d, noise_samples, As, bs):
     succ_samples = d + noise_samples
@@ -78,7 +77,6 @@ vmap_compute_contained_for_single_action = jax.jit(jax.vmap(compute_contained_fo
 
 
 def count_general(partition, target_points, noise_samples, mode, batch_size):
-
     @jax.jit
     def loop_body(i, val):
         As, bs, d, noise_samples, out = val
@@ -157,7 +155,6 @@ def normalize_and_count(d, num_regions, noise_samples, lb, ub, number_per_dim, r
 
 
 def count_rectangular(model, partition, target_points, noise_samples, batch_size):
-
     # If batch size is > 1, then use vmap version. Otherwise, use plain Python for loop.
     if batch_size > 1:
         # Define vmap function
@@ -169,12 +166,12 @@ def count_rectangular(model, partition, target_points, noise_samples, batch_size
 
         for (i, j) in tqdm(zip(starts, ends), total=len(starts)):
             num_samples_per_region[i:j] = fn_vmap(target_points[i:j],
-                                             len(partition.regions['idxs']),
-                                             noise_samples,
-                                             model.partition['boundary'][0],
-                                             model.partition['boundary'][1],
-                                             model.partition['number_per_dim'],
-                                             partition.region_idx_array)
+                                                  len(partition.regions['idxs']),
+                                                  noise_samples,
+                                                  model.partition['boundary'][0],
+                                                  model.partition['boundary'][1],
+                                                  model.partition['number_per_dim'],
+                                                  partition.region_idx_array)
 
     else:
         # Define jitted function
@@ -182,20 +179,20 @@ def count_rectangular(model, partition, target_points, noise_samples, batch_size
 
         num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
         for i, d in tqdm(enumerate(target_points), total=len(target_points)):
-            num_samples_per_region[i] = fn(d = d,
-                                           num_regions = len(partition.regions['idxs']),
-                                           noise_samples = noise_samples,
-                                           lb = model.partition['boundary'][0],
-                                           ub = model.partition['boundary'][1],
-                                           number_per_dim = model.partition['number_per_dim'],
-                                           region_idx_array = partition.region_idx_array)
+            num_samples_per_region[i] = fn(d=d,
+                                           num_regions=len(partition.regions['idxs']),
+                                           noise_samples=noise_samples,
+                                           lb=model.partition['boundary'][0],
+                                           ub=model.partition['boundary'][1],
+                                           number_per_dim=model.partition['number_per_dim'],
+                                           region_idx_array=partition.region_idx_array)
         print('-- Number of times function was compiled:', fn._cache_size())
 
     return num_samples_per_region
 
 
-def samples_to_intervals(num_samples, num_samples_per_region, interval_table, goal_bool, critical_bool):
-
+def samples_to_intervals(num_samples, num_samples_per_region, interval_table, goal_bool, critical_bool,
+                         round_probabilities=False):
     print('Convert number of contained samples to probability intervals...')
     t = time.time()
 
@@ -225,11 +222,12 @@ def samples_to_intervals(num_samples, num_samples_per_region, interval_table, go
     P_absorbing = interval_table[num_samples - num_samples_absorbing]
     P_full = interval_table[num_samples - num_samples_per_region]
 
-    # decmin = 6
-    # pmin = 10**-decmin
-    # print(f'- Put minimum (nonzero) probability to {pmin}')
-    # P_full = np.maximum(pmin, np.round(P_full, decmin))
-    # P_absorbing = np.maximum(pmin, np.round(P_absorbing, decmin))
+    if round_probabilities:
+        decmin = 4
+        pmin = 10 ** -decmin
+        print(f'- Put minimum (nonzero) probability to {pmin}')
+        P_full = np.maximum(pmin, np.round(P_full, decmin))
+        P_absorbing = np.maximum(pmin, np.round(P_absorbing, decmin))
 
     # If the sample count was zero, force probability to zero
     P_full[num_samples_per_region == 0] = 0
@@ -240,13 +238,14 @@ def samples_to_intervals(num_samples, num_samples_per_region, interval_table, go
     assert 0 <= np.all(P_full) <= 1
     assert 0 <= np.all(P_absorbing) <= 1
     # Check if all lower bounds sum up to <= 1 and upper bounds to >= 1
-    assert np.all(np.sum(P_full[:,:,0], axis=1) + P_absorbing[:,0]) <= 1
+    assert np.all(np.sum(P_full[:, :, 0], axis=1) + P_absorbing[:, 0]) <= 1
     assert np.all(np.sum(P_full[:, :, 1], axis=1) + P_absorbing[:, 1]) >= 1
 
     print(f'Computing probability intervals took {(time.time() - t):.3f} sec.')
     print('')
     # return P_full, P_goal, P_critical, P_absorbing
     return P_full, P_absorbing
+
 
 def sample_noise(model, key, number_samples):
     # Split noise key
