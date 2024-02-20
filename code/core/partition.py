@@ -113,6 +113,8 @@ class RectangularPartition(object):
         # Now scale the unit-cube partition appropriately
         centers = centers_unit * self.cell_width + lb_center
 
+        print('centers:', centers)
+
         region_idxs = np.arange(len(centers))
         lower_bounds = centers - self.cell_width / 2
         upper_bounds = centers + self.cell_width / 2
