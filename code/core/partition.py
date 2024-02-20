@@ -89,6 +89,7 @@ class RectangularPartition(object):
         t = time.time()
         # From the partition boundary, determine where the first grid centers are placed
         self.cell_width = (partition_boundary[1] - partition_boundary[0]) / number_per_dim
+        print('- Cell width:', self.cell_width)
         lb_center = partition_boundary[0] + self.cell_width * 0.5
         ub_center = partition_boundary[1] - self.cell_width * 0.5
 
@@ -96,6 +97,7 @@ class RectangularPartition(object):
         lb_unit = np.zeros(len(lb_center), dtype=int)
         ub_unit = np.array(number_per_dim-1, dtype=int)
         centers_unit = define_grid_jax(lb_unit, ub_unit, number_per_dim)
+        print('centers_unit:', centers_unit)
 
         # TODO: Remove this
         from .utils import lexsort4d
