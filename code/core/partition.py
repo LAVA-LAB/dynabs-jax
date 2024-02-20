@@ -119,7 +119,6 @@ class RectangularPartition(object):
         # Determine the vertices of all partition elements
         vmap_get_vertices_from_bounds = jax.vmap(get_vertices_from_bounds, in_axes=(0, 0), out_axes=0)
         all_vertices = vmap_get_vertices_from_bounds(lower_bounds, upper_bounds)
-        print('all_vertices:', all_vertices)
         print(f'- Grid points defined (took {(time.time()-t):.3f} sec.)')
         
         t = time.time()

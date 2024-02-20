@@ -8,6 +8,9 @@ from tqdm import tqdm
 
 from .utils import create_batches
 
+from jax import config
+config.update("jax_enable_x64", True)
+
 @jax.jit
 def backward_reach(target, A_inv, B, Q_flat, input_vertices):
 
@@ -15,9 +18,6 @@ def backward_reach(target, A_inv, B, Q_flat, input_vertices):
     vertices = jnp.matmul(A_inv, inner.T).T
 
     return vertices
-
-# Vectorized function over different sets of points
-vmap_backward_reach = jax.vmap(backward_reach, in_axes=(0, None, None, None, None), out_axes=0)
 
 def compute_polytope_halfspaces(vertices):
     '''Compute the halfspace representation (H-rep) of a polytope.'''
@@ -38,6 +38,9 @@ class RectangularTarget(object):
     def __init__(self, target_points, model):
         print('Define target points and backward reachable sets...')
         t_total = time.time()
+
+        # Vectorized function over different sets of points
+        vmap_backward_reach = jax.vmap(backward_reach, in_axes=(0, None, None, None, None), out_axes=0)
 
         t = time.time()
         self.target_points = target_points
