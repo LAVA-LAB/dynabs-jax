@@ -41,13 +41,15 @@ class RectangularTarget(object):
 
         t = time.time()
         self.target_points = target_points
-        vertices = vmap_backward_reach(target_points, model.A_inv, model.B, model.Q_flat, model.uVertices) + 1
+        vertices = vmap_backward_reach(target_points, model.A_inv, model.B, model.Q_flat, model.uVertices)
         print(f'- Backward reachable sets computed (took {(time.time()-t):.3f} sec.)')
 
         t = time.time()
         A = [[]] * len(vertices)
         b = [[]] * len(vertices)
-        for i,verts in tqdm(enumerate(vertices)):
+        pbar = tqdm(enumerate(vertices))
+        pbar.set_description_str("Computing halfspace representions")
+        for i,verts in pbar:
             A[i], b[i] = compute_polytope_halfspaces(verts)
         print(f'- Halfspace representations computed (took {(time.time() - t):.3f} sec.)')
 
