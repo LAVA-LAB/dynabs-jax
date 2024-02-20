@@ -45,7 +45,7 @@ class Spacecraft(object):
         ])
 
         # Disturbance matrix
-        self.Q = np.array([[0], [0], [0], [0], [0], [0]])
+        self.q = np.zeros(6)
 
         self.state_variables = ['x_pos', 'y_pos', 'z_pos', 'x_vel', 'y_vel', 'z_vel']
 
@@ -76,4 +76,3 @@ class Spacecraft(object):
         ], dtype=float)
 
         return
- 

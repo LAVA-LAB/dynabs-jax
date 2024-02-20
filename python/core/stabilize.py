@@ -93,7 +93,7 @@ def lqr(A, B, Q, R):
 
 
 def compute_stabilized_control_vertices(model, target_point):
-    alpha = -model.K @ model.A_inv @ (target_point - model.Q_flat)
+    alpha = -model.K @ model.A_inv @ (target_point - model.q)
     beta = np.eye(model.p) + model.K @ model.A_inv @ model.B
 
     G = np.vstack([beta, -beta, np.eye(model.p), -np.eye(model.p)])

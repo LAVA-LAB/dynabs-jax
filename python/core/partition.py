@@ -87,11 +87,18 @@ def get_vertices_from_bounds(lb, ub):
 
 class RectangularPartition(object):
 
-    def __init__(self, number_per_dim, partition_boundary, goal_regions, critical_regions, mode='fori_loop'):
-        self.rectangular = True
-
+    def __init__(self, model):
         print('Define rectangular partition...')
         t_total = time.time()
+
+        # Retrieve necessary data from the model object
+        number_per_dim = model.partition['number_per_dim']
+        partition_boundary = model.partition['boundary']
+        goal_regions = model.goal
+        critical_regions = model.critical
+
+        # Set partition as being (hyper)rectangula
+        self.rectangular = True
 
         t = time.time()
         # From the partition boundary, determine where the first grid centers are placed
@@ -149,7 +156,7 @@ class RectangularPartition(object):
         for i, goal in enumerate(goal_regions):
             goal_centers[i] = (goal[1] + goal[0]) / 2
             goal_widths[i] = (goal[1] - goal[0]) + EPS
- 
+
         vmap_center2halfspace = jax.vmap(center2halfspace, in_axes=(0, 0), out_axes=(0, 0))
         goals_A, goals_b = vmap_center2halfspace(goal_centers, goal_widths)
 

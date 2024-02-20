@@ -32,7 +32,7 @@ class Drone2D(object):
         self.B = scipy.linalg.block_diag(Bblock, Bblock)
 
         # Disturbance matrix
-        self.Q = np.array([[0], [0], [0], [0]])
+        self.q = np.zeros(4)
 
         self.state_variables = ['x_pos', 'x_vel', 'y_pos', 'y_vel']
 
@@ -95,7 +95,7 @@ class Drone3D(object):
         self.B = scipy.linalg.block_diag(Bblock, Bblock, Bblock)
 
         # Disturbance matrix
-        self.Q = np.array([[0], [0], [0], [0], [0], [0]])
+        self.q = np.zeros(6)
 
         self.state_variables = ['x_pos', 'x_vel', 'y_pos', 'y_vel', 'z_pos', 'z_vel']
 

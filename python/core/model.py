@@ -4,11 +4,11 @@ import jax
 import itertools
 import time
 
+
 def parse_model(base_model):
     '''
     Parse linear dynamical model
     '''
-
 
     print('Parse linear dynamical model...')
     t = time.time()
@@ -26,10 +26,10 @@ def parse_model(base_model):
 
     if lump == 0:
         model = make_fully_actuated(base_model,
-                   manualDimension = 'auto')
+                                    manualDimension='auto')
     else:
         model = make_fully_actuated(base_model,
-                   manualDimension = lump)
+                                    manualDimension=lump)
 
     # Determine vertices of the control input space
     stacked = np.vstack((model.uMin, model.uMax))
@@ -48,9 +48,9 @@ def parse_model(base_model):
     uAvg = (model.uMin + model.uMax) / 2
     if np.linalg.matrix_rank(np.eye(model.n) - model.A) == model.n:
         model.equilibrium = np.linalg.inv(np.eye(model.n) - model.A) @ \
-                            (model.B @ uAvg + model.Q_flat)
+                            (model.B @ uAvg + model.q)
 
-    print(f'- Model parsing done (took {(time.time()-t):.3f} sec.)')
+    print(f'- Model parsing done (took {(time.time() - t):.3f} sec.)')
     print('')
     return model
 
@@ -85,7 +85,7 @@ def make_fully_actuated(model, manualDimension='auto'):
     B_hat = np.concatenate([np.linalg.matrix_power(model.A, (dim - i)) \
                             @ model.B for i in range(1, dim + 1)], 1)
 
-    Q_hat = sum([np.linalg.matrix_power(model.A, (dim - i)) @ model.Q
+    q_hat = sum([np.linalg.matrix_power(model.A, (dim - i)) @ model.q
                  for i in range(1, dim + 1)])
 
     w_sigma_hat = sum([np.array(np.linalg.matrix_power(model.A, (dim - i))
@@ -96,8 +96,7 @@ def make_fully_actuated(model, manualDimension='auto'):
     # Overwrite original system matrices
     model.A = A_hat
     model.B = B_hat
-    model.Q = Q_hat
-    model.Q_flat = Q_hat.flatten()
+    model.q = q_hat
 
     model.noise['w_cov'] = w_sigma_hat
 

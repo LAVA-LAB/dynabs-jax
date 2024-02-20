@@ -1,24 +1,36 @@
 import numpy as np
 import jax.numpy as jnp
 import jax
-import itertools
 import time
 import cdd
 from tqdm import tqdm
-
 from .utils import create_batches
 
 
 @jax.jit
-def backward_reach(target, A_inv, B, Q_flat, input_vertices):
-    inner = target - jnp.matmul(B, input_vertices.T).T - Q_flat
+def backward_reach(target, A_inv, B, q, input_vertices):
+    '''
+    Define the backward reachable set for the given target point
+
+    :param target: Vector for the target point in R^n
+    :param A_inv: Inverse of the dynamics matrix
+    :param B: Control matrix
+    :param q: Disturbance vector
+    :param input_vertices: Matrix in R^{m*n}, where m=# control vertices and n=state space dimension
+    :return: Vertices of the backward reachable set
+    '''
+
+    inner = target - jnp.matmul(B, input_vertices.T).T - q
     vertices = jnp.matmul(A_inv, inner.T).T
 
     return vertices
 
 
 def compute_polytope_halfspaces(vertices):
-    '''Compute the halfspace representation (H-rep) of a polytope.'''
+    '''
+    Compute the halfspace representation (H-rep) of a polytope.
+    '''
+
     t = np.ones((vertices.shape[0], 1))  # first column is 1 for vertices
     tV = np.hstack([t, vertices])
     mat = cdd.Matrix(tV, number_type="float")
@@ -43,7 +55,7 @@ class RectangularTarget(object):
 
         t = time.time()
         self.target_points = target_points
-        vertices = vmap_backward_reach(target_points, model.A_inv, model.B, model.Q_flat, model.uVertices)
+        vertices = vmap_backward_reach(target_points, model.A_inv, model.B, model.q, model.uVertices)
         print(f'- Backward reachable sets computed (took {(time.time() - t):.3f} sec.)')
 
         print('- Computing halfspace representations...')
@@ -76,7 +88,7 @@ class RectangularTarget(object):
         '''
 
         for i, (x, u) in enumerate(zip(self.backreach['vertices'][idx], model.uVertices)):
-            point = model.A @ x + model.B @ u + model.Q_flat
+            point = model.A @ x + model.B @ u + model.q
 
             assert np.all(np.isclose(point, self.target_points[idx])), \
                 f"""Test for backward reachable set {idx} failed for vertex {i}:
@@ -99,6 +111,16 @@ vmap_compute_actions_enabled_in_region2 = jax.jit(
 
 
 def compute_enabled_actions(As, bs, region_vertices, mode='fori_loop', batch_size=1000):
+    '''
+    Compute the enabled actions in each state.
+
+    :param As:
+    :param bs:
+    :param region_vertices:
+    :param mode:
+    :param batch_size:
+    :return: enabled_actions - Boolean 2D array, with each row a state, and each column an action
+    '''
     print('Compute subset of enabled actions in each partition element...')
     t_total = time.time()
 
@@ -135,8 +157,6 @@ def compute_enabled_actions(As, bs, region_vertices, mode='fori_loop', batch_siz
                 enabled_actions[i:j] = vmap_compute_actions_enabled_in_region(As, bs, region_vertices[i:j])
 
     print(f'- Enabled actions computed (took {(time.time() - t):.3f} sec.)')
-
-    print(f'Total number of enabled actions: {np.sum(np.any(enabled_actions, axis=0))}')
     print(f'Computing enabled actions took {(time.time() - t_total):.3f} sec.')
     print('')
     return np.array(enabled_actions)

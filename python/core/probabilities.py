@@ -36,6 +36,19 @@ def compute_scenario_interval_table(filepath, num_samples, confidence_level):
 
 
 def count_samples_per_region(args, model, partition, target_points, noise_samples, mode, batch_size=1000):
+    '''
+    Count the number of noise samples per abstract state (partition element).
+
+    :param args:
+    :param model:
+    :param partition:
+    :param target_points:
+    :param noise_samples:
+    :param mode:
+    :param batch_size:
+    :return: num_samples_per_state - integer-valued matrix, with each row an action and each column a (successor) state
+    '''
+
     print('Compute number of successor state samples in each partition element...')
     t = time.time()
 
@@ -191,8 +204,7 @@ def count_rectangular(model, partition, target_points, noise_samples, batch_size
     return num_samples_per_region
 
 
-def samples_to_intervals(num_samples, num_samples_per_region, interval_table, goal_bool, critical_bool,
-                         round_probabilities=False):
+def samples_to_intervals(num_samples, num_samples_per_region, interval_table, round_probabilities=False):
     print('Convert number of contained samples to probability intervals...')
     t = time.time()
 
@@ -229,21 +241,21 @@ def samples_to_intervals(num_samples, num_samples_per_region, interval_table, go
         P_full = np.maximum(pmin, np.round(P_full, decmin))
         P_absorbing = np.maximum(pmin, np.round(P_absorbing, decmin))
 
-    # If the sample count was zero, force probability to zero
+    # If the sample count was zero, force probability interval to zero
     P_full[num_samples_per_region == 0] = 0
 
     print('- Perform checks...')
     # Perform checks on the transition probability intervals
     assert len(P_full) == len(P_absorbing)
-    assert 0 <= np.all(P_full) <= 1
-    assert 0 <= np.all(P_absorbing) <= 1
+    # All probabilities are between 0 and 1
+    assert np.all(0 <= P_full) and np.all(P_full <= 1)
+    assert np.all(0 <= P_absorbing) and np.all(P_absorbing <= 1)
     # Check if all lower bounds sum up to <= 1 and upper bounds to >= 1
     assert np.all(np.sum(P_full[:, :, 0], axis=1) + P_absorbing[:, 0]) <= 1
     assert np.all(np.sum(P_full[:, :, 1], axis=1) + P_absorbing[:, 1]) >= 1
 
     print(f'Computing probability intervals took {(time.time() - t):.3f} sec.')
     print('')
-    # return P_full, P_goal, P_critical, P_absorbing
     return P_full, P_absorbing
 
 

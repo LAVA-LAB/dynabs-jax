@@ -14,7 +14,7 @@ def parse_arguments():
     # Options
     parser = argparse.ArgumentParser(prefix_chars='--')
     parser.add_argument('--debug', action=argparse.BooleanOptionalAction, default=False,
-                        help="If True, perform additional checks to debug code")
+                        help="If True, perform additional checks to debug python")
     parser.add_argument('--seed', type=int, default=0,
                         help="Seed for random number generators (Jax, Numpy)")
 

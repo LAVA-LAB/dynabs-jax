@@ -18,7 +18,7 @@ args = parse_arguments()
 np.random.seed(args.seed)
 args.jax_key = jax.random.PRNGKey(args.seed)
 
-# Configure jax to use Float64 (otherwise, GPU computations may yield slightly different results)
+# In debug mode, configure jax to use Float64 (for more accurate computations)
 if args.debug:
     from jax import config
 
@@ -42,34 +42,40 @@ elif args.model == 'Spacecraft':
     base_model = benchmarks.Spacecraft()
 else:
     assert False, f"The passed model '{args.model}' could not be found"
+
+# Parse given model
 model = parse_model(base_model)
 
-partition = RectangularPartition(number_per_dim=model.partition['number_per_dim'],
-                                 partition_boundary=model.partition['boundary'],
-                                 goal_regions=model.goal,
-                                 critical_regions=model.critical,
-                                 mode='python')
+# Create partition of the continuous state space into convex polytope
+partition = RectangularPartition(model=model)
 print(f"(Number of states: {len(partition.regions['idxs'])})\n")
 
-actions = RectangularTarget(target_points=partition.regions['centers'],
-                            model=model)
+# Create actions (compute backward reachable set for all target points)
+actions = RectangularTarget(target_points=partition.regions['centers'], model=model)
+
+# If debug is enabled, test the correctness of one (arbitrary) backward reachable set
 if args.debug:
     actions.test_backwardset(idx=10, model=model)
+
 print(f"(Number of actions: {len(actions.target_points)})\n")
 
-enabled_actions = compute_enabled_actions(jnp.array(actions.backreach['A']),
-                                          jnp.array(actions.backreach['b']),
-                                          np.array(partition.regions['all_vertices']),
+# Compute the enabled actions in each state
+# TODO: Investigate using a dense matrix here (generally, it will be very sparse)
+enabled_actions = compute_enabled_actions(As=jnp.array(actions.backreach['A']),
+                                          bs=jnp.array(actions.backreach['b']),
+                                          region_vertices=np.array(partition.regions['all_vertices']),
                                           mode='vmap',
                                           batch_size=args.batch_size)
 
 print(f"(Number of enabled actions: {np.sum(np.any(enabled_actions, axis=0))})\n")
 
-# Compute noise samples
+# Compute noise samples and count the number of samples in every partition element
 samples = sample_noise(model, args.jax_key, args.num_samples)
+# TODO: Investigate using a dense matrix here (generally, it will be very sparse)
 num_samples_per_state = count_samples_per_region(args, model, partition, actions.backreach['target_points'],
                                                  samples, mode='vmap', batch_size=args.batch_size)
 
+# Load scenario approach table with probability intervals for the given number of samples and confidence level
 table_filename = f'intervals_N={args.num_samples}_beta={args.confidence}.csv'
 interval_table = compute_scenario_interval_table(Path(str(args.root_dir), 'interval_tables', table_filename),
                                                  args.num_samples, args.confidence)
@@ -78,12 +84,9 @@ interval_table = compute_scenario_interval_table(Path(str(args.root_dir), 'inter
 P_full, P_absorbing = samples_to_intervals(args.num_samples,
                                            num_samples_per_state,
                                            interval_table,
-                                           partition.goal['bools'],
-                                           partition.critical['bools'],
-                                           round_probabilities=True)
+                                           round_probabilities=False)
 
-# %%
-
+# Compute optimal policy on the iMDP abstraction
 if args.checker == 'storm' or args.debug:
     print('Create iMDP using storm...')
 
@@ -122,7 +125,6 @@ if args.checker == 'prism' or args.debug:
     builderP.compute_reach_avoid(args.prism_dir)
     print(f'- Verify with prism took: {(time.time() - t):.3f} sec.')
 
+# If debugging is enabled, compare if the results from Storm and Prism match
 if args.debug:
     assert np.all(np.abs(builderS.results - builderP.results)) < 1e-4
-
-# %%
