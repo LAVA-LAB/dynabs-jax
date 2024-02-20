@@ -26,14 +26,14 @@ class BuilderStorm:
         self.intervals_raw[(1, 1)] = pycarl.Interval(1, 1)
 
         print('- Generate graph for successor states')
-        successor_states = [np.where(P_full[a, :, 0] > 0)[0] for a in actions]
+        successor_states = [np.where(P_full[a, :, 1] > 0)[0] for a in actions]
 
         # Reshape all probability intervals
         print('- Generate pycarl intervals...')
         P_full_flat = P_full.reshape(-1, 2)
-        P_full_flat = P_full_flat[P_full_flat[:,0] > 0,:]
+        P_full_flat = P_full_flat[P_full_flat[:, 1] > 0,:]
         P_absorbing_flat = P_absorbing.reshape(-1, 2)
-        P_absorbing_flat = P_absorbing_flat[P_absorbing_flat[:, 0] > 0, :]
+        P_absorbing_flat = P_absorbing_flat[P_absorbing_flat[:, 1] > 0, :]
         P_unique = np.unique(np.vstack((P_full_flat, P_absorbing_flat)), axis=0)
 
         # Enumerate only over unique probability intervals
@@ -248,7 +248,7 @@ class BuilderPrism:
 
                     # Absorbing state transition
                     str_main = [f'{s} {choice} {ss} [{P_full[a,ss,0]},{P_full[a,ss,1]}] {actionLabel}'
-                                for ss in states if P_full[a,ss,0] > 0]
+                                for ss in states if P_full[a, ss, 1] > 0]
 
                     str_abs = [f'{s} {choice} {self.absorbing_state} [{P_absorbing[a, 0]},{P_absorbing[a, 1]}] {actionLabel}']
 
