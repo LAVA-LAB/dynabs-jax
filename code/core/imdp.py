@@ -217,7 +217,7 @@ class BuilderPrism:
         nr_transitions_absolute = 0
 
         # For every state
-        for s in states:
+        for s in tqdm(states):
             states_created += 1
             choice = 0
 
@@ -260,7 +260,6 @@ class BuilderPrism:
 
         # Add one choice and transition in the absorbing state
         transition_file_list += [[f'{self.absorbing_state} 0 {self.absorbing_state} [1,1] loop']]
-
         states_created += 1
         nr_choices_absolute += 1
         nr_transitions_absolute += 1
