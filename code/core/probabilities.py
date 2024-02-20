@@ -225,11 +225,11 @@ def samples_to_intervals(num_samples, num_samples_per_region, interval_table, go
     P_absorbing = interval_table[num_samples - num_samples_absorbing]
     P_full = interval_table[num_samples - num_samples_per_region]
 
-    decmin = 6
-    pmin = 10**-decmin
-    print(f'- Put minimum (nonzero) probability to {pmin}')
-    P_full = np.maximum(pmin, np.round(P_full, decmin))
-    P_absorbing = np.maximum(pmin, np.round(P_absorbing, decmin))
+    # decmin = 6
+    # pmin = 10**-decmin
+    # print(f'- Put minimum (nonzero) probability to {pmin}')
+    # P_full = np.maximum(pmin, np.round(P_full, decmin))
+    # P_absorbing = np.maximum(pmin, np.round(P_absorbing, decmin))
 
     # If the sample count was zero, force probability to zero
     P_full[num_samples_per_region == 0] = 0
