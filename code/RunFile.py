@@ -15,7 +15,6 @@ from core.imdp import BuilderStorm, BuilderPrism
 import benchmarks
 
 args = parse_arguments()
-args.debug = True
 np.random.seed(args.seed)
 args.jax_key = jax.random.PRNGKey(args.seed)
 
