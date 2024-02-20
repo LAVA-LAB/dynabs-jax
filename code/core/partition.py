@@ -97,7 +97,6 @@ class RectangularPartition(object):
         lb_unit = np.zeros(len(lb_center), dtype=int)
         ub_unit = np.array(number_per_dim-1, dtype=int)
         centers_unit = define_grid_jax(lb_unit, ub_unit, number_per_dim)
-        print('centers_unit:', centers_unit)
 
         # TODO: Remove this
         from .utils import lexsort4d
@@ -108,11 +107,9 @@ class RectangularPartition(object):
         centers_numpy = np.array(centers_unit, dtype=int)
         self.region_idx_array = np.zeros(number_per_dim, dtype=int)
         self.region_idx_array[tuple(centers_numpy.T)] = np.arange(len(centers_numpy))
-        print('region_idx_array:', self.region_idx_array)
 
         # Now scale the unit-cube partition appropriately
         centers = centers_unit * self.cell_width + lb_center
-
         print('centers:', centers)
 
         region_idxs = np.arange(len(centers))
@@ -122,6 +119,7 @@ class RectangularPartition(object):
         # Determine the vertices of all partition elements
         vmap_get_vertices_from_bounds = jax.vmap(get_vertices_from_bounds, in_axes=(0, 0), out_axes=0)
         all_vertices = vmap_get_vertices_from_bounds(lower_bounds, upper_bounds)
+        print('all_vertices:', all_vertices)
         print(f'- Grid points defined (took {(time.time()-t):.3f} sec.)')
         
         t = time.time()
