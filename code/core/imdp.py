@@ -102,8 +102,6 @@ class BuilderStorm:
             row += 1
             states_created += 1
 
-        print(f'Number of rows created: {row}')
-        print(f'Number of states created: {states_created}')
         self.nr_states = states_created
 
         matrix = self.builder.build()

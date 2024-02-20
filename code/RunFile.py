@@ -97,6 +97,8 @@ if args.checker == 'storm' or args.debug:
     # stormpy.export_to_drn(builderS.imdp, 'out.drn')
     print(f'- Build with storm took: {(time.time() - t):.3f} sec.')
 
+    print(builderS.imdp)
+
     t = time.time()
     builderS.compute_reach_avoid()
     print(f'- Verify with storm took: {(time.time() - t):.3f} sec.')
