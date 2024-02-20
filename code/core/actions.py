@@ -8,9 +8,6 @@ from tqdm import tqdm
 
 from .utils import create_batches
 
-from jax import config
-config.update("jax_enable_x64", True)
-
 @jax.jit
 def backward_reach(target, A_inv, B, Q_flat, input_vertices):
 
@@ -45,7 +42,6 @@ class RectangularTarget(object):
         t = time.time()
         self.target_points = target_points
         vertices = vmap_backward_reach(target_points, model.A_inv, model.B, model.Q_flat, model.uVertices)
-        vertices = np.round(vertices, 2)
         print(f'- Backward reachable sets computed (took {(time.time()-t):.3f} sec.)')
 
         t = time.time()
