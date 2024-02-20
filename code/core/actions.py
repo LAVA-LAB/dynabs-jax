@@ -41,7 +41,7 @@ class RectangularTarget(object):
 
         t = time.time()
         self.target_points = target_points
-        vertices = vmap_backward_reach(target_points, model.A_inv, model.B, model.Q_flat, model.uVertices)
+        vertices = vmap_backward_reach(target_points, model.A_inv, model.B, model.Q_flat, model.uVertices) + 1
         print(f'- Backward reachable sets computed (took {(time.time()-t):.3f} sec.)')
 
         t = time.time()
