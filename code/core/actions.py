@@ -8,6 +8,9 @@ from tqdm import tqdm
 
 from .utils import create_batches
 
+from jax import config
+config.update("jax_enable_x64", True)
+
 @jax.jit
 def backward_reach(target, A_inv, B, Q_flat, input_vertices):
 
