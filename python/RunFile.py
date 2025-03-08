@@ -111,8 +111,8 @@ else:
 
     for i in tqdm(range(len(actions.vertices))):
         # t = time.time()
-        fn_vmap(jnp.array(actions.vertices[i][0][0,:]),
-                         jnp.array(actions.vertices[i][1][0,:]),
+        fn_vmap(jnp.array(actions.vertices[i][0]),
+                         jnp.array(actions.vertices[i][1]),
                          samples,
                          model.partition['boundary'][0],
                          model.partition['boundary'][1],
