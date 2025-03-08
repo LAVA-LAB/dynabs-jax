@@ -56,7 +56,7 @@ class Dubins(object):
         state_next = jnp.array([x_next, y_next, theta_next, V_next])
         return state_next
 
-    # @partial(jax.jit, static_argnums=(0))
+    @partial(jax.jit, static_argnums=(0))
     def step_set(self, state_min, state_max, action_min, action_max):
 
         # Convert to boxes
