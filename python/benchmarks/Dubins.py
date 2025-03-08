@@ -90,7 +90,7 @@ class Dubins(object):
         self.num_actions = [5,5]
 
         self.partition['boundary'] = np.array([[-10, -10, -np.pi, -1], [10, 10, np.pi, 1]])
-        self.partition['number_per_dim'] = np.array([10, 10, 10, 10])
+        self.partition['number_per_dim'] = np.array([20, 20, 10, 10])
 
         self.goal = np.array([
             [[-2, 2, -np.pi, -0.1], [0.1, 0.1, np.pi, 0.1]]
