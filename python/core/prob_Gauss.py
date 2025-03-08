@@ -62,7 +62,7 @@ def compute_probabilities(model, partition, reach):
                                    reach_state[0], reach_state[1], model.noise['cov'],
                                    partition.boundary_lb, partition.boundary_ub)
 
-        for a in len(reach_state):
+        for a in len(reach_state[0]):
             prob[s][a] = p[p[:,0] > 1e-6]
             prob_idx[s][a] = np.arange(partition.size)
             prob_absorbing[s][a] = pa
