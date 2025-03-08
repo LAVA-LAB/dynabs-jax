@@ -271,6 +271,66 @@ def samples_to_intervals(num_samples, num_samples_per_region, interval_table, ro
     return P_full, P_absorbing
 
 
+def samples_to_intervals_box(num_samples, region_lb, region_ub, absorbing_lb, absorbing_ub, interval_table, round_probabilities=False):
+    print('Convert number of contained samples to probability intervals...')
+    t = time.time()
+
+    # Sum over each row
+    # num_samples_goal = np.sum(num_samples_per_region[:, goal_bool], axis=1)
+    # num_samples_critical = np.sum(num_samples_per_region[:, critical_bool], axis=1)
+
+    # print('Samples per region shape:', num_samples_per_region.shape)
+    # print('Samples per region sum:', np.sum(num_samples_per_region, axis=1))
+
+    print('- Determine number of samples in absorbing state...')
+    num_samples_absorbing = num_samples - np.sum(num_samples_per_region, axis=1)
+
+    # Exclude critical regions and goal regions
+    # mask = ~goal_bool * ~critical_bool
+    # num_samples_per_region_masked = num_samples_per_region[:, mask]
+
+    # Read the probability intervals from the table (for the given number of samples per region)
+    # P_masked = interval_table[num_samples - num_samples_per_region_masked]
+    # P_full = np.zeros(num_samples_per_region.shape + (2,))
+    # P_full[:, mask] = P_masked
+
+    # P_goal = interval_table[num_samples - num_samples_goal]
+    # P_critical = interval_table[num_samples - num_samples_critical]
+
+    print('- Determine transition probability interval matrices...')
+    P_absorbing = interval_table[num_samples - num_samples_absorbing]
+    P_full = interval_table[num_samples - num_samples_per_region]
+
+    if round_probabilities:
+        decmin = 4
+        pmin = 10 ** -decmin
+        print(f'- Put minimum (nonzero) probability to {pmin}')
+        P_full = np.maximum(pmin, np.round(P_full, decmin))
+        P_absorbing = np.maximum(pmin, np.round(P_absorbing, decmin))
+
+    # If the sample count was zero, force probability interval to zero
+    P_full[num_samples_per_region == 0] = 0
+
+    print('- Perform checks...')
+    # Perform checks on the transition probability intervals
+    assert len(P_full) == len(P_absorbing)
+    # All probabilities are between 0 and 1
+    assert np.all(0 <= P_full) and np.all(P_full <= 1)
+    assert np.all(0 <= P_absorbing) and np.all(P_absorbing <= 1)
+    # Check if all lower bounds sum up to <= 1 and upper bounds to >= 1
+    assert np.all(np.sum(P_full[:, :, 0], axis=1) + P_absorbing[:, 0]) <= 1
+    assert np.all(np.sum(P_full[:, :, 1], axis=1) + P_absorbing[:, 1]) >= 1
+
+    # P_full[:,:,0] = num_samples_per_region / num_samples
+    # P_full[:,:,1] = num_samples_per_region / num_samples
+    # P_absorbing[:, 0] = num_samples_absorbing / num_samples
+    # P_absorbing[:, 1] = num_samples_absorbing / num_samples
+
+    print(f'Computing probability intervals took {(time.time() - t):.3f} sec.')
+    print('')
+    return P_full, P_absorbing
+
+
 def sample_noise(model, key, number_samples):
     # Split noise key
     key, subkey = jax.random.split(key)
@@ -285,6 +345,7 @@ def sample_noise(model, key, number_samples):
     return jnp.array(noise_samples, dtype=float)
 
 
+@jax.jit
 def count_single_box(lb_idx, ub_idx, idx_inv, number_per_dim, wrap):
 
     # Make sure to wrap specified variables correctly, which is done by shifting the region index rather than shifting the sample box
@@ -347,7 +408,7 @@ def normalize_and_count_box(d_lb, d_ub, noise_samples, lb, ub, number_per_dim, w
     return region_lb, region_ub, absorbing_lb, absorbing_ub
 
 
-def count_rectangular_single_state(model, partition, reach_lb, reach_ub, noise_samples, batch_size):
+def count_rectangular_single_state(model, partition, reach, noise_samples, batch_size):
     '''
     For a given state, compute the sample counts for all actions and all noise samples
     :param modeL:
@@ -359,57 +420,60 @@ def count_rectangular_single_state(model, partition, reach_lb, reach_ub, noise_s
     :return:
     '''
 
-    region_lb = np.zeros((len(reach_lb), len(partition.regions['idxs'])), dtype=int)
-    region_ub = np.zeros((len(reach_lb), len(partition.regions['idxs'])), dtype=int)
-    absorbing_lb = np.zeros(len(reach_lb), dtype=int)
-    absorbing_ub = np.zeros(len(reach_lb), dtype=int)
+    region_lb = [np.zeros((len(reach[0][0]), len(partition.regions['idxs'])), dtype=int) for _ in range(len(reach))]
+    region_ub = [np.zeros((len(reach[0][0]), len(partition.regions['idxs'])), dtype=int) for _ in range(len(reach))]
+    absorbing_lb = [np.zeros(len(reach[0][0]), dtype=int) for _ in range(len(reach))]
+    absorbing_ub = [np.zeros(len(reach[0][0]), dtype=int) for _ in range(len(reach))]
 
-    # If batch size is > 1, then use vmap version. Otherwise, use plain Python for loop.
+    for s,reach_state in tqdm(enumerate(reach.values()), total=len(reach)):
+
+        # If batch size is > 1, then use vmap version. Otherwise, use plain Python for loop.
+        if batch_size > 1:
+
+            # Vmap over multiple actions
+            fn_vmap = jax.jit(jax.vmap(normalize_and_count_box, in_axes=(0, 0, None, None, None, None, None, None), out_axes=(0, 0, 0, 0)))
+
+            starts, ends = create_batches(len(reach[s][0]), batch_size)
+
+            for (i, j) in zip(starts, ends):
+                result = fn_vmap(reach[s][0][i:j],
+                                  reach[s][1][i:j],
+                                  noise_samples,
+                                  model.partition['boundary'][0],
+                                  model.partition['boundary'][1],
+                                  model.partition['number_per_dim'],
+                                  model.wrap,
+                                  partition.region_idx_inv)
+
+                region_lb[s][i:j] = result[0]
+                region_ub[s][i:j] = result[1]
+                absorbing_lb[s][i:j] = result[2]
+                absorbing_ub[s][i:j] = result[3]
+
+        else:
+            # Define jitted function
+            fn = jax.jit(normalize_and_count_box) #, static_argnums=(2,3,4,5,6,7))
+
+            for i, (d_lb, d_ub) in enumerate(zip(reach[s][0], reach[s][1])):
+
+                result = fn(
+                    d_lb,
+                    d_ub,
+                    noise_samples,
+                    model.partition['boundary'][0],
+                    model.partition['boundary'][1],
+                    model.partition['number_per_dim'],
+                    model.wrap,
+                    partition.region_idx_inv)
+
+                region_lb[s][i] = result[0]
+                region_ub[s][i] = result[1]
+                absorbing_lb[s][i] = result[2]
+                absorbing_ub[s][i] = result[3]
+
     if batch_size > 1:
-
-        # Vmap over multiple actions
-        fn_vmap = jax.jit(jax.vmap(normalize_and_count_box, in_axes=(0, 0, None, None, None, None, None, None), out_axes=(0, 0, 0, 0)))
-
-        starts, ends = create_batches(len(reach_lb), batch_size)
-
-        for (i, j) in tqdm(zip(starts, ends), total=len(starts)):
-            result = fn_vmap(reach_lb[i:j],
-                              reach_ub[i:j],
-                              noise_samples,
-                              model.partition['boundary'][0],
-                              model.partition['boundary'][1],
-                              model.partition['number_per_dim'],
-                              model.wrap,
-                              partition.region_idx_inv)
-
-        region_lb[i:j] = result[0]
-        region_ub[i:j] = result[1]
-        absorbing_lb[i:j] = result[2]
-        absorbing_ub[i:j] = result[3]
-
         print('-- Number of times function was compiled:', fn_vmap._cache_size())
-
     else:
-        # Define jitted function
-        fn = jax.jit(normalize_and_count_box) #, static_argnums=(2,3,4,5,6,7))
-
-        for i, (d_lb, d_ub) in tqdm(enumerate(zip(reach_lb, reach_ub)), total=len(reach_lb)):
-
-            result = fn(
-                d_lb,
-                d_ub,
-                noise_samples,
-                model.partition['boundary'][0],
-                model.partition['boundary'][1],
-                model.partition['number_per_dim'],
-                model.wrap,
-                partition.region_idx_inv)
-
-            region_lb[i] = result[0]
-            region_ub[i] = result[1]
-            absorbing_lb[i] = result[2]
-            absorbing_ub[i] = result[3]
-
         print('-- Number of times function was compiled:', fn._cache_size())
 
     return region_lb, region_ub, absorbing_lb, absorbing_ub

@@ -87,6 +87,7 @@ class Dubins(object):
         # Authority limit for the control u, both positive and negative
         self.uMin = [-2, -2,]
         self.uMax = [2, 2]
+        self.num_actions = [5,5]
 
         self.partition['boundary'] = np.array([[-10, -10, -np.pi, -1], [10, 10, np.pi, 1]])
         self.partition['number_per_dim'] = np.array([8, 8, 8, 8])
