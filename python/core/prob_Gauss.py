@@ -64,9 +64,6 @@ def compute_probabilities(model, partition, reach):
                                    reach_state[0], reach_state[1], model.noise['cov'],
                                    partition.boundary_lb, partition.boundary_ub)
 
-        print(p)
-        print(p_nonzero)
-
         for a in range(len(reach_state[0])):
             prob[s][a] = p[a][p_nonzero[a]]
             prob_idx[s][a] = states[p_nonzero[a]]
