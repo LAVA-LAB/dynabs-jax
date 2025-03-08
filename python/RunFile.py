@@ -122,23 +122,8 @@ if base_model.linear:
                                                round_probabilities=True)
 
 else:
-
     region_lb, region_ub, absorbing_lb, absorbing_ub = \
         count_rectangular_single_state(model, partition, actions.vertices, samples, args.batch_size)
-
-    # for i in tqdm(range(len(actions.vertices))):
-    #     # t = time.time()
-    #     fn_vmap(jnp.array(actions.vertices[i][0]),
-    #                      jnp.array(actions.vertices[i][1]),
-    #                      samples,
-    #                      model.partition['boundary'][0],
-    #                      model.partition['boundary'][1],
-    #                      model.partition['number_per_dim'],
-    #                      model.wrap,
-    #                      partition.region_idx_inv)
-    #
-    #     # print(f'-- Took {(time.time() - t):.3f} sec.')
-    #     # print('-- Number of times function was compiled:', fn_vmap._cache_size())
 
     # Compute probability intervals
     P_full, P_absorbing = samples_to_intervals_box(args.num_samples,
