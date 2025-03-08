@@ -261,11 +261,6 @@ def samples_to_intervals(num_samples, num_samples_per_region, interval_table, ro
     assert np.all(np.sum(P_full[:, :, 0], axis=1) + P_absorbing[:, 0]) <= 1
     assert np.all(np.sum(P_full[:, :, 1], axis=1) + P_absorbing[:, 1]) >= 1
 
-    # P_full[:,:,0] = num_samples_per_region / num_samples
-    # P_full[:,:,1] = num_samples_per_region / num_samples
-    # P_absorbing[:, 0] = num_samples_absorbing / num_samples
-    # P_absorbing[:, 1] = num_samples_absorbing / num_samples
-
     print(f'Computing probability intervals took {(time.time() - t):.3f} sec.')
     print('')
     return P_full, P_absorbing
@@ -282,9 +277,6 @@ def samples_to_intervals_box(num_samples, region_lb, region_ub, absorbing_lb, ab
     # print('Samples per region shape:', num_samples_per_region.shape)
     # print('Samples per region sum:', np.sum(num_samples_per_region, axis=1))
 
-    print('- Determine number of samples in absorbing state...')
-    num_samples_absorbing = num_samples - np.sum(num_samples_per_region, axis=1)
-
     # Exclude critical regions and goal regions
     # mask = ~goal_bool * ~critical_bool
     # num_samples_per_region_masked = num_samples_per_region[:, mask]
@@ -297,34 +289,44 @@ def samples_to_intervals_box(num_samples, region_lb, region_ub, absorbing_lb, ab
     # P_goal = interval_table[num_samples - num_samples_goal]
     # P_critical = interval_table[num_samples - num_samples_critical]
 
-    print('- Determine transition probability interval matrices...')
-    P_absorbing = interval_table[num_samples - num_samples_absorbing]
-    P_full = interval_table[num_samples - num_samples_per_region]
+    P_full = {}
+    P_absorbing = {}
 
-    if round_probabilities:
-        decmin = 4
-        pmin = 10 ** -decmin
-        print(f'- Put minimum (nonzero) probability to {pmin}')
-        P_full = np.maximum(pmin, np.round(P_full, decmin))
-        P_absorbing = np.maximum(pmin, np.round(P_absorbing, decmin))
+    for i in range(len(region_lb)):
+        print('- Determine transition probability interval matrices...')
+        P_full_lb = interval_table[:,0][num_samples - region_ub[i]]
+        P_full_ub = interval_table[:,1][num_samples - region_lb[i]]
 
-    # If the sample count was zero, force probability interval to zero
-    P_full[num_samples_per_region == 0] = 0
+        P_absorbing_lb = interval_table[:,0][num_samples - absorbing_ub[i]]
+        P_absorbing_ub = interval_table[:,1][num_samples - absorbing_lb[i]]
 
-    print('- Perform checks...')
-    # Perform checks on the transition probability intervals
-    assert len(P_full) == len(P_absorbing)
-    # All probabilities are between 0 and 1
-    assert np.all(0 <= P_full) and np.all(P_full <= 1)
-    assert np.all(0 <= P_absorbing) and np.all(P_absorbing <= 1)
-    # Check if all lower bounds sum up to <= 1 and upper bounds to >= 1
-    assert np.all(np.sum(P_full[:, :, 0], axis=1) + P_absorbing[:, 0]) <= 1
-    assert np.all(np.sum(P_full[:, :, 1], axis=1) + P_absorbing[:, 1]) >= 1
+        print(P_full_ub.shape)
+        print(P_full_ub.shape)
+        print(P_absorbing_lb.shape)
+        print(P_absorbing_ub.shape)
 
-    # P_full[:,:,0] = num_samples_per_region / num_samples
-    # P_full[:,:,1] = num_samples_per_region / num_samples
-    # P_absorbing[:, 0] = num_samples_absorbing / num_samples
-    # P_absorbing[:, 1] = num_samples_absorbing / num_samples
+        P_full[i] = np.stack((P_full_lb, P_full_ub), axis=2)
+        P_absorbing[i] = np.stack((P_absorbing_lb, P_absorbing_ub), axis=1)
+
+        if round_probabilities:
+            decmin = 4
+            pmin = 10 ** -decmin
+            print(f'- Put minimum (nonzero) probability to {pmin}')
+            P_full[i] = np.maximum(pmin, np.round(P_full[i], decmin))
+            P_absorbing[i] = np.maximum(pmin, np.round(P_absorbing[i], decmin))
+
+        # If the sample count was zero, force probability interval to zero
+        P_full[i][region_ub[i] == 0] = 0
+
+        print('- Perform checks...')
+        # Perform checks on the transition probability intervals
+        assert len(P_full[i]) == len(P_absorbing[i])
+        # All probabilities are between 0 and 1
+        assert np.all(0 <= P_full[i]) and np.all(P_full[i] <= 1)
+        assert np.all(0 <= P_absorbing[i]) and np.all(P_absorbing[i] <= 1)
+        # Check if all lower bounds sum up to <= 1 and upper bounds to >= 1
+        assert np.all(np.sum(P_full[i][:, :, 0], axis=1) + P_absorbing[i][:, 0]) <= 1
+        assert np.all(np.sum(P_full[i][:, :, 1], axis=1) + P_absorbing[i][:, 1]) >= 1
 
     print(f'Computing probability intervals took {(time.time() - t):.3f} sec.')
     print('')

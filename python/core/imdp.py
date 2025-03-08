@@ -10,7 +10,7 @@ class BuilderStorm:
     Construct iMDP
     """
 
-    def __init__(self, states, goal_regions, critical_regions, actions, enabled_actions, P_full, P_absorbing):
+    def __init__(self, state_dependent, states, goal_regions, critical_regions, actions, enabled_actions, P_full, P_absorbing):
 
         import pycarl
         import stormpy
@@ -26,13 +26,23 @@ class BuilderStorm:
         self.intervals_raw[(1, 1)] = pycarl.Interval(1, 1)
 
         print('- Generate graph for successor states')
-        successor_states = [np.where(P_full[a, :, 1] > 0)[0] for a in actions]
+        if state_dependent:
+            successor_states = [[np.where(P_full[s][a, :, 1] > 0)[0] for a in actions] for s in states]
+        else:
+            successor_states = [[np.where(P_full[a, :, 1] > 0)[0] for a in actions]]
 
         # Reshape all probability intervals
         print('- Generate pycarl intervals...')
-        P_full_flat = P_full.reshape(-1, 2)
-        P_full_flat = P_full_flat[P_full_flat[:, 1] > 0, :]
-        P_absorbing_flat = P_absorbing.reshape(-1, 2)
+        if state_dependent:
+            P_full_flat = np.concatenate(list(P_full.values()))
+            P_absorbing_flat = np.concatenate(list(P_absorbing.values()))
+            P_full_flat = P_full_flat.reshape(-1, 2)
+            P_absorbing_flat = P_absorbing_flat.reshape(-1, 2)
+        else:
+            P_full_flat = P_full.reshape(-1, 2)
+            P_absorbing_flat = P_absorbing.reshape(-1, 2)
+
+        # P_full_flat = P_full_flat[P_full_flat[:, 1] > 0, :]
         # P_absorbing_flat = P_absorbing_flat[P_absorbing_flat[:, 1] > 0, :]
         P_unique = np.unique(np.vstack((P_full_flat, P_absorbing_flat)), axis=0)
 
@@ -43,22 +53,46 @@ class BuilderStorm:
         self.intervals_state = {}
         self.intervals_absorbing = {}
 
-        for a in tqdm(np.array(actions)):
-            self.intervals_state[a] = {}
+        print('\n- Store intervals for individual transitions...')
+        if state_dependent:
+            for s in tqdm(states):
+                self.intervals_state[s] = {}
+                self.intervals_absorbing[s] = {}
+                for a in np.array(actions):
+                    self.intervals_state[s][a] = {}
 
-            # Add intervals for each successor state
-            for ss in successor_states[a]:
-                self.intervals_state[a][ss] = self.intervals_raw[tuple(P_full[a, ss])]
+                    # Add intervals for each successor state
+                    for ss in successor_states[s][a]:
+                        self.intervals_state[s][a][ss] = self.intervals_raw[tuple(P_full[s][a, ss])]
 
-            # Add intervals for other states
-            self.intervals_absorbing[a] = self.intervals_raw[tuple(P_absorbing[a])]
+                    # Add intervals for other states
+                    self.intervals_absorbing[s][a] = self.intervals_raw[tuple(P_absorbing[s][a])]
+
+        else:
+            self.intervals_state[0] = {}
+            self.intervals_absorbing[0] = {}
+            for a in tqdm(np.array(actions)):
+                self.intervals_state[0][a] = {}
+
+                # Add intervals for each successor state
+                for ss in successor_states[0][a]:
+                    self.intervals_state[0][a][ss] = self.intervals_raw[tuple(P_full[a, ss])]
+
+                # Add intervals for other states
+                self.intervals_absorbing[0][a] = self.intervals_raw[tuple(P_absorbing[a])]
 
         row = 0
         states_created = 0
 
         # For all states
-        print('- Build iMDP...')
+        print('\n- Build iMDP...')
         for s in tqdm(states):
+
+            # If action probability intervals are state-dependent, then use the actual state id
+            if state_dependent:
+                s_from = s
+            else:
+                s_from = 0
 
             # For each state, create a new row group
             self.builder.new_row_group(row)
@@ -74,11 +108,11 @@ class BuilderStorm:
 
                 # For every enabled action
                 for a in enabled_in_s:
-                    for ss, intv in self.intervals_state[a].items():
+                    for ss, intv in self.intervals_state[s_from][a].items():
                         self.builder.add_next_value(row, ss, intv)
 
                     # Add transitions to absorbing state
-                    self.builder.add_next_value(row, self.absorbing_state, self.intervals_absorbing[a])
+                    self.builder.add_next_value(row, self.absorbing_state, self.intervals_absorbing[s_from][a])
 
                     # for ss in successor_states[a]:
                     #     self.builder.add_next_value(row, ss, self.intervals[tuple(P_full[a, ss])])
@@ -112,7 +146,8 @@ class BuilderStorm:
 
         # Define initial states
         state_labeling.add_label('init')
-        state_labeling.add_label_to_state('init', 667)
+        # TODO Fix initial state
+        state_labeling.add_label_to_state('init', 10)
 
         # Add absorbing (unsafe) states
         state_labeling.add_label('absorbing')
@@ -153,7 +188,7 @@ class BuilderPrism:
     Construct iMDP
     """
 
-    def __init__(self, states, goal_regions, critical_regions, actions, enabled_actions, P_full, P_absorbing):
+    def __init__(self, state_dependent, states, goal_regions, critical_regions, actions, enabled_actions, P_full, P_absorbing):
 
         self.out_dir = 'output/'
         self.export_name = 'model'
@@ -221,6 +256,13 @@ class BuilderPrism:
             choice = 0
             enabled_in_s = np.where(enabled_actions[s])[0]
 
+            if state_dependent:
+                Pf = P_full[s]
+                Pa = P_absorbing[s]
+            else:
+                Pf = P_full
+                Pa = P_absorbing
+
             # If no actions are enabled at all, add a deterministic transition to the absorbing state
             if len(enabled_in_s) == 0 or s in critical_regions or s in goal_regions:
 
@@ -240,12 +282,12 @@ class BuilderPrism:
                     actionLabel = "a_" + str(a)
 
                     # Absorbing state transition
-                    str_main = [f'{s} {choice} {ss} [{P_full[a, ss, 0]},{P_full[a, ss, 1]}] {actionLabel}'
-                                for ss in states if P_full[a, ss, 1] > 0]
+                    str_main = [f'{s} {choice} {ss} [{Pf[a, ss, 0]},{Pf[a, ss, 1]}] {actionLabel}'
+                                for ss in states if Pf[a, ss, 1] > 0]
 
-                    if P_absorbing[a, 1] > 0:
+                    if Pa[a, 1] > 0:
                         str_abs = [
-                            f'{s} {choice} {self.absorbing_state} [{P_absorbing[a, 0]},{P_absorbing[a, 1]}] {actionLabel}']
+                            f'{s} {choice} {self.absorbing_state} [{Pa[a, 0]},{Pa[a, 1]}] {actionLabel}']
                     else:
                         str_abs = []
 

@@ -30,6 +30,7 @@ args.jax_key = jax.random.PRNGKey(args.seed)
 
 # args.debug = True
 args.model = 'Dubins'
+args.debug = True
 
 # args.batch_size = 1
 
@@ -142,7 +143,8 @@ if args.checker == 'storm' or args.debug:
 
     # Build interval MDP via StormPy
     t = time.time()
-    builderS = BuilderStorm(states=np.array(partition.regions['idxs']),
+    builderS = BuilderStorm(state_dependent=not model.linear,
+                            states=np.array(partition.regions['idxs']),
                             goal_regions=np.array(partition.goal['idxs']),
                             critical_regions=np.array(partition.critical['idxs']),
                             actions=np.array(actions.idxs, dtype=int),
@@ -162,11 +164,12 @@ if args.checker == 'prism' or args.debug:
     print('Create iMDP using prism...')
 
     t = time.time()
-    builderP = BuilderPrism(states=partition.regions['idxs'],
-                            goal_regions=partition.goal['idxs'],
-                            critical_regions=partition.critical['idxs'],
-                            actions=actions.backreach['idxs'],
-                            enabled_actions=enabled_actions,
+    builderP = BuilderPrism(state_dependent=not model.linear,
+                            states=np.array(partition.regions['idxs']),
+                            goal_regions=np.array(partition.goal['idxs']),
+                            critical_regions=np.array(partition.critical['idxs']),
+                            actions=np.array(actions.idxs, dtype=int),
+                            enabled_actions=np.array(enabled_actions, dtype=bool),
                             P_full=P_full,
                             P_absorbing=P_absorbing)
     print(f'- Build with prism took: {(time.time() - t):.3f} sec.')
