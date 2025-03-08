@@ -35,11 +35,12 @@ vmap_minmax_Gauss = jax.jit(jax.vmap(minmax_Gauss, in_axes=(0, 0, None, None, No
 def interval_distribution(x_lbs, x_ubs, mean_lb, mean_ub, cov, state_space_lb, state_space_ub):
 
     prob = vmap_minmax_Gauss(x_lbs, x_ubs, mean_lb, mean_ub, cov)
+    prob_nonzero = prob[:,0] > 1e-6
 
     prob_state_space = minmax_Gauss(state_space_lb, state_space_ub, mean_lb, mean_ub, cov)
     prob_absorbing = 1 - prob_state_space[::-1]
 
-    return prob, prob_absorbing
+    return prob, prob_nonzero, prob_absorbing
 
 # vmap to compute distributions for all actions in a state
 vmap_interval_distribution = jax.jit(jax.vmap(interval_distribution, in_axes=(None, None, 0, 0, None, None, None), out_axes=(0, 0)))
@@ -49,6 +50,7 @@ def compute_probabilities(model, partition, reach):
     prob = {}
     prob_idx = {}
     prob_absorbing = {}
+    states = np.arange(partition.size)
 
     # For all states
     for s, reach_state in tqdm(enumerate(reach.values()), total=len(reach)):
@@ -58,13 +60,13 @@ def compute_probabilities(model, partition, reach):
         prob_absorbing[s] = {}
 
         # Compute the probability distribution for every action
-        p, pa = vmap_interval_distribution(partition.regions['lower_bounds'], partition.regions['upper_bounds'],
+        p, p_nonzero, pa = vmap_interval_distribution(partition.regions['lower_bounds'], partition.regions['upper_bounds'],
                                    reach_state[0], reach_state[1], model.noise['cov'],
                                    partition.boundary_lb, partition.boundary_ub)
 
         for a in range(len(reach_state[0])):
-            prob[s][a] = p[p[:,a,0] > 1e-6]
-            prob_idx[s][a] = np.arange(partition.size)
+            prob[s][a] = p[a][p_nonzero]
+            prob_idx[s][a] = states[p_nonzero]
             prob_absorbing[s][a] = pa[a]
 
     return prob, prob_absorbing
