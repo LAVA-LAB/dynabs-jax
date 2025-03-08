@@ -11,7 +11,7 @@ from core.partition import RectangularPartition
 from core.actions_backward import RectangularBackward, compute_enabled_actions
 from core.actions_forward import RectangularForward
 from core.probabilities import sample_noise, count_samples_per_region, count_rectangular_single_state, compute_scenario_interval_table, \
-    samples_to_intervals, samples_to_intervals_box, normalize_and_count_box
+    samples_to_intervals, normalize_and_count_box
 from core.imdp import BuilderStorm, BuilderPrism
 
 import benchmarks
@@ -102,38 +102,41 @@ samples = sample_noise(model, args.jax_key, args.num_samples)
 
 # %%
 
-from core.probabilities import sample_noise, count_samples_per_region, count_rectangular_single_state, compute_scenario_interval_table, \
-    samples_to_intervals, samples_to_intervals_box, normalize_and_count_box
+if base_model.linear:
+    # TODO: Investigate using a dense matrix here (generally, it will be very sparse)
+    num_samples_per_state = count_samples_per_region(args, model, partition, actions.target_points,
+                                                     samples, mode='vmap', batch_size=args.batch_size)
+
+else:
+
+    # Vmap over multiple actions
+    fn_vmap = jax.jit(jax.vmap(normalize_and_count_box, in_axes=(0, 0, None, None, None, None, None, None), out_axes=(0, 0, 0, 0)))
+
+    for i in tqdm(range(len(actions.vertices))):
+        # t = time.time()
+        fn_vmap(jnp.array(actions.vertices[i][0]),
+                         jnp.array(actions.vertices[i][1]),
+                         samples,
+                         model.partition['boundary'][0],
+                         model.partition['boundary'][1],
+                         model.partition['number_per_dim'],
+                         model.wrap,
+                         partition.region_idx_inv)
+
+        # print(f'-- Took {(time.time() - t):.3f} sec.')
+        # print('-- Number of times function was compiled:', fn_vmap._cache_size())
+
 
 # Load scenario approach table with probability intervals for the given number of samples and confidence level
 table_filename = f'intervals_N={args.num_samples}_beta={args.confidence}.csv'
 interval_table = compute_scenario_interval_table(Path(str(args.root_dir), 'interval_tables', table_filename),
                                                  args.num_samples, args.confidence)
 
-if base_model.linear:
-    # TODO: Investigate using a dense matrix here (generally, it will be very sparse)
-    num_samples_per_state = count_samples_per_region(args, model, partition, actions.target_points,
-                                                     samples, mode='vmap', batch_size=args.batch_size)
-
-    # Compute probability intervals
-    P_full, P_absorbing = samples_to_intervals(args.num_samples,
-                                               num_samples_per_state,
-                                               interval_table,
-                                               round_probabilities=True)
-
-else:
-
-    region_lb, region_ub, absorbing_lb, absorbing_ub = \
-        count_rectangular_single_state(model, partition, actions.vertices, samples, args.batch_size)
-
-    # Compute probability intervals
-    P_full, P_absorbing = samples_to_intervals_box(args.num_samples,
-                                               region_lb,
-                                               region_ub,
-                                               absorbing_lb,
-                                               absorbing_ub,
-                                               interval_table,
-                                               round_probabilities=True)
+# Compute probability intervals
+P_full, P_absorbing = samples_to_intervals(args.num_samples,
+                                           num_samples_per_state,
+                                           interval_table,
+                                           round_probabilities=True)
 
 # %%
 
