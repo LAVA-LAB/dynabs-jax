@@ -132,7 +132,7 @@ def count_general(partition, target_points, noise_samples, mode, batch_size):
     return num_samples_per_region
 
 
-def normalize_and_count(d, num_regions, noise_samples, lb, ub, number_per_dim, region_idx_array):
+def normalize_and_count(d, num_regions, noise_samples, lb, ub, number_per_dim, wrap, region_idx_array):
     '''
     Normalize the given samples, such that each region is a unit hypercube
     :param num_regions:
@@ -155,7 +155,8 @@ def normalize_and_count(d, num_regions, noise_samples, lb, ub, number_per_dim, r
     samples_norm = (samples - lb) / (ub - lb) * number_per_dim
 
     # Perform integer division by 1 and determine to which regions the samples belong
-    samples_idxs = jnp.array(samples_norm // 1, dtype=int)
+    samples_rounded = samples_norm // 1
+    samples_idxs = jnp.array(samples_rounded * ~wrap + samples_rounded % number_per_dim * wrap, dtype=int)
 
     # If the integer division is below zero, the sample is outside the partition, but we want to avoid wrapping.
     # Thus, we set the index for these samples to zero, and increment all others by one
@@ -171,8 +172,8 @@ def count_rectangular(model, partition, target_points, noise_samples, batch_size
     # If batch size is > 1, then use vmap version. Otherwise, use plain Python for loop.
     if batch_size > 1:
         # Define vmap function
-        fn_vmap = jax.jit(jax.vmap(normalize_and_count, in_axes=(0, None, None, None, None, None, None), out_axes=0),
-                          static_argnums=(1))
+        fn_vmap = jax.jit(jax.vmap(normalize_and_count, in_axes=(0, None, None, None, None, None, None, None), out_axes=0),
+                          static_argnums=(1,2,3,4,5,6,7))
 
         starts, ends = create_batches(len(target_points), batch_size)
         num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
@@ -184,11 +185,14 @@ def count_rectangular(model, partition, target_points, noise_samples, batch_size
                                                   model.partition['boundary'][0],
                                                   model.partition['boundary'][1],
                                                   model.partition['number_per_dim'],
+                                                  model.wrap,
                                                   partition.region_idx_array)
+
+        print('-- Number of times function was compiled:', fn_vmap._cache_size())
 
     else:
         # Define jitted function
-        fn = jax.jit(normalize_and_count, static_argnums=(1))
+        fn = jax.jit(normalize_and_count) #, static_argnums=(1))
 
         num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
         for i, d in tqdm(enumerate(target_points), total=len(target_points)):
@@ -198,6 +202,7 @@ def count_rectangular(model, partition, target_points, noise_samples, batch_size
                                            lb=model.partition['boundary'][0],
                                            ub=model.partition['boundary'][1],
                                            number_per_dim=model.partition['number_per_dim'],
+                                           wrap=model.wrap,
                                            region_idx_array=partition.region_idx_array)
         print('-- Number of times function was compiled:', fn._cache_size())
 
@@ -254,6 +259,11 @@ def samples_to_intervals(num_samples, num_samples_per_region, interval_table, ro
     assert np.all(np.sum(P_full[:, :, 0], axis=1) + P_absorbing[:, 0]) <= 1
     assert np.all(np.sum(P_full[:, :, 1], axis=1) + P_absorbing[:, 1]) >= 1
 
+    # P_full[:,:,0] = num_samples_per_region / num_samples
+    # P_full[:,:,1] = num_samples_per_region / num_samples
+    # P_absorbing[:, 0] = num_samples_absorbing / num_samples
+    # P_absorbing[:, 1] = num_samples_absorbing / num_samples
+
     print(f'Computing probability intervals took {(time.time() - t):.3f} sec.')
     print('')
     return P_full, P_absorbing
@@ -264,7 +274,139 @@ def sample_noise(model, key, number_samples):
     key, subkey = jax.random.split(key)
 
     # Compute Gaussian noise samples
-    noise_samples = jax.random.multivariate_normal(key, np.zeros(model.n), model.noise['w_cov'],
-                                                   shape=(number_samples,))
+    # noise_samples = jax.random.multivariate_normal(key, np.zeros(model.n), model.noise['w_cov'],
+    #                                                shape=(number_samples,))
+
+    noise_samples = np.random.multivariate_normal(np.zeros(model.n), model.noise['w_cov'],
+                                  size=(number_samples,))
 
     return noise_samples
+
+
+def count_single_box(lb_idx, ub_idx, idx_inv, number_per_dim, wrap):
+
+    # Make sure to wrap specified variables correctly, which is done by shifting the region index rather than shifting the sample box
+    shift_by = jnp.array(wrap * ((idx_inv - lb_idx) // number_per_dim) * number_per_dim, dtype=int)
+    idx_inv += shift_by
+
+    # Compute partition elements that intersect with the given box
+    in_region = jnp.all(idx_inv >= lb_idx, axis=1) * jnp.all(idx_inv <= ub_idx, axis=1)
+
+    # Compute if the given box is contained in a single partition element
+    in_region_only = jnp.all(idx_inv == lb_idx, axis=1) * jnp.all(idx_inv == ub_idx, axis=1)
+
+    # A box intersect with the complement of the partitioned space if any lower bound index is below 0 or upper bound above the number_per_dim
+    in_absorbing = jnp.any((lb_idx < 0) * ~wrap) + jnp.any((ub_idx > number_per_dim) * ~wrap)
+
+    # A box is completely outside the partitioned space if any upper bound index is below 0 or lower bound above the number_per_dim
+    in_absorbing_only = jnp.any((ub_idx < 0) * ~wrap) + jnp.any((lb_idx > number_per_dim) * ~wrap)
+
+    return in_region, in_region_only, in_absorbing, in_absorbing_only
+
+
+# Vmap over multiple noise samples
+vmap_count_single_box = jax.jit(jax.vmap(count_single_box, in_axes=(0, 0, None, None, None), out_axes=(0, 0, 0, 0)))
+
+
+def normalize_and_count_box(d_lb, d_ub, noise_samples, lb, ub, number_per_dim, wrap, region_idx_inv):
+    '''
+    Normalize the forward reachable set for a *single action*, such that each region is a unit hypercube
+    :param d:
+    :param noise_samples:
+    :param lb:
+    :param ub:
+    :param number_per_dim:
+    :param wrap:
+    :param region_idx_inv:
+    :return:
+    '''
+
+    # Determine successor state samples
+    lb_samples = d_lb + noise_samples
+    ub_samples = d_ub + noise_samples
+
+    # Normalize samples
+    lb_samples_norm = (lb_samples - lb) / (ub - lb) * number_per_dim
+    ub_samples_norm = (ub_samples - lb) / (ub - lb) * number_per_dim
+
+    # Perform integer division by 1 and determine to which regions the samples belong
+    lb_samples_idxs = jnp.array(lb_samples_norm // 1, dtype=int)
+    ub_samples_idxs = jnp.array(ub_samples_norm // 1, dtype=int)
+
+    in_region, in_region_only, in_absorbing, in_absorbing_only = vmap_count_single_box(lb_samples_idxs, ub_samples_idxs, region_idx_inv, number_per_dim, wrap)
+
+    # Total counts are given by summing over the individual boxes
+    region_lb = jnp.sum(in_region_only, axis=0)
+    region_ub = jnp.sum(in_region, axis=0)
+    absorbing_lb = jnp.sum(in_absorbing_only, axis=0)
+    absorbing_ub = jnp.sum(in_absorbing, axis=0)
+
+    return region_lb, region_ub, absorbing_lb, absorbing_ub
+
+
+def count_rectangular_single_state(model, partition, reach_lb, reach_ub, noise_samples, batch_size):
+    '''
+    For a given state, compute the sample counts for all actions and all noise samples
+    :param modeL:
+    :param partition:
+    :param reach_lb:
+    :param reach_ub:
+    :param noise_samples:
+    :param batch_size:
+    :return:
+    '''
+
+    region_lb = np.zeros((len(reach_lb), len(partition.regions['idxs'])), dtype=int)
+    region_ub = np.zeros((len(reach_lb), len(partition.regions['idxs'])), dtype=int)
+    absorbing_lb = np.zeros(len(reach_lb), dtype=int)
+    absorbing_ub = np.zeros(len(reach_lb), dtype=int)
+
+    # If batch size is > 1, then use vmap version. Otherwise, use plain Python for loop.
+    if batch_size > 1:
+
+        # Vmap over multiple actions
+        fn_vmap = jax.jit(jax.vmap(normalize_and_count_box, in_axes=(0, 0, None, None, None, None, None, None), out_axes=(0, 0, 0, 0)))
+
+        starts, ends = create_batches(len(reach_lb), batch_size)
+
+        for (i, j) in tqdm(zip(starts, ends), total=len(starts)):
+            result = fn_vmap(reach_lb[i:j],
+                              reach_ub[i:j],
+                              noise_samples,
+                              model.partition['boundary'][0],
+                              model.partition['boundary'][1],
+                              model.partition['number_per_dim'],
+                              model.wrap,
+                              partition.region_idx_inv)
+
+        region_lb[i:j] = result[0]
+        region_ub[i:j] = result[1]
+        absorbing_lb[i:j] = result[2]
+        absorbing_ub[i:j] = result[3]
+
+        print('-- Number of times function was compiled:', fn_vmap._cache_size())
+
+    else:
+        # Define jitted function
+        fn = jax.jit(normalize_and_count_box) #, static_argnums=(2,3,4,5,6,7))
+
+        for i, (d_lb, d_ub) in tqdm(enumerate(zip(reach_lb, reach_ub)), total=len(reach_lb)):
+
+            result = fn(
+                d_lb,
+                d_ub,
+                noise_samples,
+                model.partition['boundary'][0],
+                model.partition['boundary'][1],
+                model.partition['number_per_dim'],
+                model.wrap,
+                partition.region_idx_inv)
+
+            region_lb[i] = result[0]
+            region_ub[i] = result[1]
+            absorbing_lb[i] = result[2]
+            absorbing_ub[i] = result[3]
+
+        print('-- Number of times function was compiled:', fn._cache_size())
+
+    return region_lb, region_ub, absorbing_lb, absorbing_ub

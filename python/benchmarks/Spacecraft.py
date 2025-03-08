@@ -9,6 +9,8 @@ class Spacecraft(object):
         Defines the 2D drone benchmark, with a 4D LTI system
         '''
 
+        self.linear = True
+
         self.set_model()
         self.set_spec()
 
@@ -44,10 +46,13 @@ class Spacecraft(object):
             [0, 0, np.cos(n * T)]
         ])
 
+        self.n, self.p = self.B.shape
+
         # Disturbance matrix
         self.q = np.zeros(6)
 
         self.state_variables = ['x_pos', 'y_pos', 'z_pos', 'x_vel', 'y_vel', 'z_vel']
+        self.wrap = jnp.array([False, False, False, False, False, False], dtype=bool)
 
         # Covariance of the process noise
         self.noise = dict()

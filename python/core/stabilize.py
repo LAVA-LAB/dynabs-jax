@@ -104,14 +104,14 @@ def compute_stabilized_control_vertices(model, target_point):
     M = np.c_[h, -G]
 
     # build cdd matrix, set representation to inequalities
-    mat = cdd.Matrix(M, number_type='float')
-    mat.rep_type = cdd.RepType.INEQUALITY
+    mat = cdd.matrix_from_array(M, rep_type=cdd.RepType.INEQUALITY)  # , number_type="float")
+    # mat.rep_type = cdd.RepType.INEQUALITY
 
     # build polyhedron
-    poly = cdd.Polyhedron(mat)
+    poly = cdd.polyhedron_from_matrix(mat)
 
     # get vertices
-    gen = np.array(poly.get_generators())
+    gen = np.array(poly.copy_generators().array)
 
     if len(gen) > 0:
         u_vertices = np.array(gen)[:, 1:]

@@ -9,6 +9,8 @@ class Drone2D(object):
         Defines the 2D drone benchmark, with a 4D LTI system
         '''
 
+        self.linear = True
+
         self.set_model()
         self.set_spec()
 
@@ -30,11 +32,13 @@ class Drone2D(object):
 
         self.A = scipy.linalg.block_diag(Ablock, Ablock)
         self.B = scipy.linalg.block_diag(Bblock, Bblock)
+        self.n, self.p = self.B.shape
 
         # Disturbance matrix
         self.q = np.zeros(4)
 
         self.state_variables = ['x_pos', 'x_vel', 'y_pos', 'y_vel']
+        self.wrap = jnp.array([False, False, False, False], dtype=bool)
 
         # Covariance of the process noise
         self.noise = dict()
@@ -72,6 +76,8 @@ class Drone3D(object):
         Defines the 2D drone benchmark, with a 4D LTI system
         '''
 
+        self.linear = True
+
         self.set_model()
         self.set_spec()
 
@@ -93,11 +99,13 @@ class Drone3D(object):
 
         self.A = scipy.linalg.block_diag(Ablock, Ablock, Ablock)
         self.B = scipy.linalg.block_diag(Bblock, Bblock, Bblock)
+        self.n, self.p = self.B.shape
 
         # Disturbance matrix
         self.q = np.zeros(6)
 
         self.state_variables = ['x_pos', 'x_vel', 'y_pos', 'y_vel', 'z_pos', 'z_vel']
+        self.wrap = jnp.array([False, False, False, False, False, False], dtype=bool)
 
         # Covariance of the process noise
         self.noise = dict()

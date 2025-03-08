@@ -5,7 +5,7 @@ import itertools
 import time
 
 
-def parse_model(base_model):
+def parse_linear_model(base_model):
     '''
     Parse linear dynamical model
     '''
@@ -21,8 +21,6 @@ def parse_model(base_model):
     base_model.uMax = np.array(base_model.uMax).astype(float)
 
     lump = base_model.lump
-
-    base_model.n = base_model.A.shape[0]
 
     if lump == 0:
         model = make_fully_actuated(base_model,
@@ -49,6 +47,30 @@ def parse_model(base_model):
     if np.linalg.matrix_rank(np.eye(model.n) - model.A) == model.n:
         model.equilibrium = np.linalg.inv(np.eye(model.n) - model.A) @ \
                             (model.B @ uAvg + model.q)
+
+    print(f'- Model parsing done (took {(time.time() - t):.3f} sec.)')
+    print('')
+    return model
+
+
+def parse_nonlinear_model(model):
+    '''
+    Parse nonlinear dynamical model
+    '''
+
+    print('Parse nonlinear dynamical model...')
+    t = time.time()
+
+    model.partition['boundary'] = np.array(model.partition['boundary']).astype(float)
+    model.partition['number_per_dim'] = np.array(model.partition['number_per_dim']).astype(int)
+
+    # Control limitations
+    model.uMin = np.array(model.uMin).astype(float)
+    model.uMax = np.array(model.uMax).astype(float)
+
+    # Determine vertices of the control input space
+    stacked = np.vstack((model.uMin, model.uMax))
+    model.uVertices = np.array(list(itertools.product(*stacked.T)))
 
     print(f'- Model parsing done (took {(time.time() - t):.3f} sec.)')
     print('')
@@ -97,6 +119,9 @@ def make_fully_actuated(model, manualDimension='auto'):
     model.A = A_hat
     model.B = B_hat
     model.q = q_hat
+
+    # Update control dimension
+    model.p = np.size(model.B, 1)  # Nr of inputs
 
     model.noise['w_cov'] = w_sigma_hat
 

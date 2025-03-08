@@ -33,7 +33,7 @@ class BuilderStorm:
         P_full_flat = P_full.reshape(-1, 2)
         P_full_flat = P_full_flat[P_full_flat[:, 1] > 0, :]
         P_absorbing_flat = P_absorbing.reshape(-1, 2)
-        P_absorbing_flat = P_absorbing_flat[P_absorbing_flat[:, 1] > 0, :]
+        # P_absorbing_flat = P_absorbing_flat[P_absorbing_flat[:, 1] > 0, :]
         P_unique = np.unique(np.vstack((P_full_flat, P_absorbing_flat)), axis=0)
 
         # Enumerate only over unique probability intervals
@@ -159,7 +159,6 @@ class BuilderPrism:
         self.export_name = 'model'
         self.out_path = str(self.out_dir + self.export_name)
         self.PRISM_allfile = str(self.out_path + '.all')
-        head = 1
 
         # Set some constants
         self.absorbing_state = np.max(states) + 1
@@ -220,14 +219,13 @@ class BuilderPrism:
         for s in tqdm(states):
             states_created += 1
             choice = 0
-
             enabled_in_s = np.where(enabled_actions[s])[0]
 
             # If no actions are enabled at all, add a deterministic transition to the absorbing state
             if len(enabled_in_s) == 0 or s in critical_regions or s in goal_regions:
 
                 selfloop_prob = '[1.0,1.0]'
-                substring = [f'{s} {choice} {s} {selfloop_prob}']
+                substring = [f'{s} {choice} {self.absorbing_state} {selfloop_prob}']
 
                 nr_choices_absolute += 1
                 nr_transitions_absolute += 1
@@ -245,8 +243,11 @@ class BuilderPrism:
                     str_main = [f'{s} {choice} {ss} [{P_full[a, ss, 0]},{P_full[a, ss, 1]}] {actionLabel}'
                                 for ss in states if P_full[a, ss, 1] > 0]
 
-                    str_abs = [
-                        f'{s} {choice} {self.absorbing_state} [{P_absorbing[a, 0]},{P_absorbing[a, 1]}] {actionLabel}']
+                    if P_absorbing[a, 1] > 0:
+                        str_abs = [
+                            f'{s} {choice} {self.absorbing_state} [{P_absorbing[a, 0]},{P_absorbing[a, 1]}] {actionLabel}']
+                    else:
+                        str_abs = []
 
                     # Increase choice counter
                     choice += 1
