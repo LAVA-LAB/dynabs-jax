@@ -107,8 +107,8 @@ class RectangularPartition(object):
         ub_center = partition_boundary[1] - self.cell_width * 0.5
 
         # First define a grid where each region is a unit cube
-        lb_unit = jnp.zeros(len(lb_center), dtype=int)
-        ub_unit = jnp.array(number_per_dim - 1, dtype=int)
+        lb_unit = np.zeros(len(lb_center), dtype=int)
+        ub_unit = np.array(number_per_dim - 1, dtype=int)
         centers_unit = define_grid_jax(lb_unit, ub_unit, number_per_dim)
 
         # TODO: Remove this
@@ -117,17 +117,16 @@ class RectangularPartition(object):
 
         # TODO: Check how to avoid this step
         # Define n-dimensional array (n = dimension of state space) to index elements of the partition
-        centers = jnp.array(centers_unit, dtype=int)
+        centers_numpy = np.array(centers_unit, dtype=int)
         self.region_idx_array = np.zeros(number_per_dim, dtype=int)
-        self.region_idx_array[tuple(centers.T)] = np.arange(len(centers))
-        self.region_idx_array = jnp.array(self.region_idx_array)
+        self.region_idx_array[tuple(centers_numpy.T)] = np.arange(len(centers_numpy))
         # Define list with each element containing its index elements
-        self.region_idx_inv = centers
+        self.region_idx_inv = centers_numpy
 
         # Now scale the unit-cube partition appropriately
         centers = centers_unit * self.cell_width + lb_center
 
-        region_idxs = jnp.arange(len(centers))
+        region_idxs = np.arange(len(centers))
         lower_bounds = centers - self.cell_width / 2
         upper_bounds = centers + self.cell_width / 2
 
@@ -159,9 +158,6 @@ class RectangularPartition(object):
         for i, goal in enumerate(goal_regions):
             goal_centers[i] = (goal[1] + goal[0]) / 2
             goal_widths[i] = (goal[1] - goal[0]) + EPS
-
-        goal_centers = jnp.array(goal_centers, dtype=float)
-        goal_widths = jnp.array(goal_widths, dtype=float)
 
         vmap_center2halfspace = jax.vmap(center2halfspace, in_axes=(0, 0), out_axes=(0, 0))
         goals_A, goals_b = vmap_center2halfspace(goal_centers, goal_widths)

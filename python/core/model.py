@@ -13,12 +13,12 @@ def parse_linear_model(base_model):
     print('Parse linear dynamical model...')
     t = time.time()
 
-    base_model.partition['boundary'] = jnp.array(base_model.partition['boundary']).astype(float)
-    base_model.partition['number_per_dim'] = jnp.array(base_model.partition['number_per_dim']).astype(int)
+    base_model.partition['boundary'] = np.array(base_model.partition['boundary']).astype(float)
+    base_model.partition['number_per_dim'] = np.array(base_model.partition['number_per_dim']).astype(int)
 
     # Control limitations
-    base_model.uMin = jnp.array(base_model.uMin).astype(float)
-    base_model.uMax = jnp.array(base_model.uMax).astype(float)
+    base_model.uMin = np.array(base_model.uMin).astype(float)
+    base_model.uMax = np.array(base_model.uMax).astype(float)
 
     lump = base_model.lump
 
@@ -31,7 +31,7 @@ def parse_linear_model(base_model):
 
     # Determine vertices of the control input space
     stacked = np.vstack((model.uMin, model.uMax))
-    model.uVertices = jnp.array(list(itertools.product(*stacked.T)))
+    model.uVertices = np.array(list(itertools.product(*stacked.T)))
 
     # Determine inverse A matrix
     model.A_inv = np.linalg.inv(model.A)
@@ -45,17 +45,8 @@ def parse_linear_model(base_model):
     # Determine what the equilibrium point of the linear system is
     uAvg = (model.uMin + model.uMax) / 2
     if np.linalg.matrix_rank(np.eye(model.n) - model.A) == model.n:
-        model.equilibrium = jnp.array(np.linalg.inv(np.eye(model.n) - model.A) @ \
-                            (model.B @ uAvg + model.q), dtype=float)
-
-    # Convert from np to jnp
-    # model.A = jnp.array(model.A, dtype=float)
-    # model.B = jnp.array(model.B, dtype=float)
-    # model.A_inv = jnp.array(model.A_inv, dtype=float)
-    # model.B_pinv = jnp.array(model.B_pinv, dtype=float)
-    # model.q = jnp.array(model.q, dtype=float)
-    # model.uMin = jnp.array(model.uMin, dtype=float)
-    # model.uMax = jnp.array(model.uMax, dtype=float)
+        model.equilibrium = np.linalg.inv(np.eye(model.n) - model.A) @ \
+                            (model.B @ uAvg + model.q)
 
     print(f'- Model parsing done (took {(time.time() - t):.3f} sec.)')
     print('')
@@ -70,16 +61,16 @@ def parse_nonlinear_model(model):
     print('Parse nonlinear dynamical model...')
     t = time.time()
 
-    model.partition['boundary'] = jnp.array(model.partition['boundary']).astype(float)
-    model.partition['number_per_dim'] = jnp.array(model.partition['number_per_dim']).astype(int)
+    model.partition['boundary'] = np.array(model.partition['boundary']).astype(float)
+    model.partition['number_per_dim'] = np.array(model.partition['number_per_dim']).astype(int)
 
     # Control limitations
-    model.uMin = jnp.array(model.uMin, dtype=float)
-    model.uMax = jnp.array(model.uMax, dtype=float)
+    model.uMin = np.array(model.uMin).astype(float)
+    model.uMax = np.array(model.uMax).astype(float)
 
     # Determine vertices of the control input space
     stacked = np.vstack((model.uMin, model.uMax))
-    model.uVertices = jnp.array(list(itertools.product(*stacked.T)))
+    model.uVertices = np.array(list(itertools.product(*stacked.T)))
 
     print(f'- Model parsing done (took {(time.time() - t):.3f} sec.)')
     print('')
@@ -137,7 +128,7 @@ def make_fully_actuated(model, manualDimension='auto'):
     # Redefine sampling time of model
     model.tau *= dim
 
-    model.uMin = jnp.repeat(model.uMin, dim)
-    model.uMax = jnp.repeat(model.uMax, dim)
+    model.uMin = np.repeat(model.uMin, dim)
+    model.uMax = np.repeat(model.uMax, dim)
 
     return model

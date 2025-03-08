@@ -22,7 +22,7 @@ class RectangularForward(object):
         vmap_forward_reach = jax.vmap(forward_reach, in_axes=(None, None, None, 0), out_axes=0)
 
         action_resolution = [10,10]
-
+        
         discrete_per_dimension = [np.linspace(model.uMin[i], model.uMax[i], num=action_resolution[i]) for i in range(len(action_resolution))]
         discrete_inputs = np.array(list(itertools.product(*discrete_per_dimension)))
 

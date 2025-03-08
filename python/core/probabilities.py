@@ -281,7 +281,7 @@ def sample_noise(model, key, number_samples):
     noise_samples = np.random.multivariate_normal(np.zeros(model.n), model.noise['w_cov'],
                                   size=(number_samples,))
 
-    return jnp.array(noise_samples, dtype=float)
+    return noise_samples
 
 
 def count_single_box(lb_idx, ub_idx, idx_inv, number_per_dim, wrap):
