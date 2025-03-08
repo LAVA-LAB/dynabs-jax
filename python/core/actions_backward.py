@@ -67,11 +67,11 @@ class RectangularBackward(object):
             A[i], b[i] = compute_polytope_halfspaces(verts)
         print(f'- Halfspace representations computed (took {(time.time() - t):.3f} sec.)')
 
-        self.idxs = np.arange(len(vertices))
+        self.idxs = jnp.arange(len(vertices))
         self.vertices = vertices
-        self.target_points = target_points,
-        self.A = np.array(A)
-        self.b = np.array(b)
+        self.target_points = target_points
+        self.A = jnp.array(A, dtype=float)
+        self.b = jnp.array(b, dtype=float)
 
         print(f'Defining actions took {(time.time() - t_total):.3f} sec.')
         print('')
@@ -157,4 +157,4 @@ def compute_enabled_actions(As, bs, region_vertices, mode='fori_loop', batch_siz
     print(f'- Enabled actions computed (took {(time.time() - t):.3f} sec.)')
     print(f'Computing enabled actions took {(time.time() - t_total):.3f} sec.')
     print('')
-    return np.array(enabled_actions)
+    return jnp.array(enabled_actions)
