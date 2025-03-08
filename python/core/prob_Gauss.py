@@ -69,7 +69,7 @@ def compute_probabilities(model, partition, reach):
         pa = np.array(pa)
 
         for a in range(len(reach_state[0])):
-            # prob[s][a] = p[a][p_nonzero[a]]
+            prob[s][a] = p[a][p_nonzero[a]]
             prob_idx[s][a] = states[p_nonzero[a]]
             prob_absorbing[s][a] = pa[a]
 
