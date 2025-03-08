@@ -56,7 +56,7 @@ class Spacecraft(object):
 
         # Covariance of the process noise
         self.noise = dict()
-        self.noise['w_cov'] = np.diag([.1, .1, .01, .01, .01, .01])
+        self.noise['cov'] = np.diag([.1, .1, .01, .01, .01, .01])
 
         return
 

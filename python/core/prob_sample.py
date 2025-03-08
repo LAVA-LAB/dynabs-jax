@@ -338,10 +338,10 @@ def sample_noise(model, key, number_samples):
     key, subkey = jax.random.split(key)
 
     # Compute Gaussian noise samples
-    # noise_samples = jax.random.multivariate_normal(key, np.zeros(model.n), model.noise['w_cov'],
+    # noise_samples = jax.random.multivariate_normal(key, np.zeros(model.n), model.noise['cov'],
     #                                                shape=(number_samples,))
 
-    noise_samples = np.random.multivariate_normal(np.zeros(model.n), model.noise['w_cov'],
+    noise_samples = np.random.multivariate_normal(np.zeros(model.n), model.noise['cov'],
                                   size=(number_samples,))
 
     return jnp.array(noise_samples, dtype=float)

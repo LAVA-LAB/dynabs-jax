@@ -10,8 +10,9 @@ from core.model import parse_linear_model, parse_nonlinear_model
 from core.partition import RectangularPartition
 from core.actions_backward import RectangularBackward, compute_enabled_actions
 from core.actions_forward import RectangularForward
-from core.probabilities import sample_noise, count_samples_per_region, count_rectangular_single_state, compute_scenario_interval_table, \
-    samples_to_intervals, samples_to_intervals_box, normalize_and_count_box
+from core.prob_sample import sample_noise, count_samples_per_region, count_rectangular_single_state, compute_scenario_interval_table, \
+    samples_to_intervals, samples_to_intervals_box
+from core.prob_Gauss import compute_probabilities
 from core.imdp import BuilderStorm, BuilderPrism
 
 import benchmarks
@@ -103,9 +104,6 @@ samples = sample_noise(model, args.jax_key, args.num_samples)
 
 # %%
 
-from core.probabilities import sample_noise, count_samples_per_region, count_rectangular_single_state, compute_scenario_interval_table, \
-    samples_to_intervals, samples_to_intervals_box, normalize_and_count_box
-
 # Load scenario approach table with probability intervals for the given number of samples and confidence level
 table_filename = f'intervals_N={args.num_samples}_beta={args.confidence}.csv'
 interval_table = compute_scenario_interval_table(Path(str(args.root_dir), 'interval_tables', table_filename),
@@ -123,17 +121,19 @@ if base_model.linear:
                                                round_probabilities=True)
 
 else:
-    region_lb, region_ub, absorbing_lb, absorbing_ub = \
-        count_rectangular_single_state(model, partition, actions.vertices, samples, args.batch_size)
+    # region_lb, region_ub, absorbing_lb, absorbing_ub = \
+    #     count_rectangular_single_state(model, partition, actions.vertices, samples, args.batch_size)
+    #
+    # # Compute probability intervals
+    # P_full, P_absorbing = samples_to_intervals_box(args.num_samples,
+    #                                            region_lb,
+    #                                            region_ub,
+    #                                            absorbing_lb,
+    #                                            absorbing_ub,
+    #                                            interval_table,
+    #                                            round_probabilities=True)
 
-    # Compute probability intervals
-    P_full, P_absorbing = samples_to_intervals_box(args.num_samples,
-                                               region_lb,
-                                               region_ub,
-                                               absorbing_lb,
-                                               absorbing_ub,
-                                               interval_table,
-                                               round_probabilities=True)
+    P_full, P_absorbing = compute_probabilities(model, partition, actions.vertices)
 
 # %%
 

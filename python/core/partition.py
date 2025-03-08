@@ -94,6 +94,8 @@ class RectangularPartition(object):
         # Retrieve necessary data from the model object
         number_per_dim = model.partition['number_per_dim']
         partition_boundary = model.partition['boundary']
+        self.boundary_lb = partition_boundary[0]
+        self.boundary_ub = partition_boundary[1]
         goal_regions = model.goal
         critical_regions = model.critical
 

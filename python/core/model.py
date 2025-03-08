@@ -120,7 +120,7 @@ def make_fully_actuated(model, manualDimension='auto'):
                  for i in range(1, dim + 1)])
 
     w_sigma_hat = sum([np.array(np.linalg.matrix_power(model.A, (dim - i))
-                                @ model.noise['w_cov'] @
+                                @ model.noise['cov'] @
                                 np.linalg.matrix_power(model.A.T, (dim - i))
                                 ) for i in range(1, dim + 1)])
 
@@ -132,7 +132,7 @@ def make_fully_actuated(model, manualDimension='auto'):
     # Update control dimension
     model.p = np.size(model.B, 1)  # Nr of inputs
 
-    model.noise['w_cov'] = w_sigma_hat
+    model.noise['cov'] = w_sigma_hat
 
     # Redefine sampling time of model
     model.tau *= dim
