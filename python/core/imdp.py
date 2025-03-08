@@ -43,7 +43,7 @@ class BuilderStorm:
         self.intervals_state = {}
         self.intervals_absorbing = {}
 
-        for a in tqdm(actions):
+        for a in tqdm(np.array(actions)):
             self.intervals_state[a] = {}
 
             # Add intervals for each successor state
