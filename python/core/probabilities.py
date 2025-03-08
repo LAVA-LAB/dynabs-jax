@@ -173,7 +173,7 @@ def count_rectangular(model, partition, target_points, noise_samples, batch_size
     if batch_size > 1:
         # Define vmap function
         fn_vmap = jax.jit(jax.vmap(normalize_and_count, in_axes=(0, None, None, None, None, None, None, None), out_axes=0),
-                          static_argnums=(1,2,3,4,5,6,7))
+                          static_argnums=(1))
 
         starts, ends = create_batches(len(target_points), batch_size)
         num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
