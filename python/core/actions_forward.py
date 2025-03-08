@@ -23,7 +23,6 @@ class RectangularForward(object):
 
         action_resolution = [10,10]
 
-
         discrete_per_dimension = [np.linspace(model.uMin[i], model.uMax[i], num=action_resolution[i]) for i in range(len(action_resolution))]
         discrete_inputs = np.array(list(itertools.product(*discrete_per_dimension)))
 

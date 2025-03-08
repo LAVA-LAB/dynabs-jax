@@ -111,8 +111,8 @@ else:
 
     for i in range(len(actions.vertices)):
         t = time.time()
-        fn_vmap(jnp.array(actions.vertices[i][0][0:10,:]),
-                         jnp.array(actions.vertices[i][1][0:10,:]),
+        fn_vmap(jnp.array(actions.vertices[i][0]),
+                         jnp.array(actions.vertices[i][1]),
                          samples,
                          model.partition['boundary'][0],
                          model.partition['boundary'][1],
@@ -121,7 +121,6 @@ else:
                          partition.region_idx_inv)
 
         print(f'-- Took {(time.time() - t):.3f} sec.')
-        time.sleep(0.1)
         print('-- Number of times function was compiled:', fn_vmap._cache_size())
 
 
