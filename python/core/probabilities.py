@@ -445,10 +445,10 @@ def count_rectangular_single_state(model, partition, reach, noise_samples, batch
                                   model.wrap,
                                   partition.region_idx_inv)
 
-                region_lb[s][i:j] = result[0]
-                region_ub[s][i:j] = result[1]
-                absorbing_lb[s][i:j] = result[2]
-                absorbing_ub[s][i:j] = result[3]
+                # region_lb[s][i:j] = result[0]
+                # region_ub[s][i:j] = result[1]
+                # absorbing_lb[s][i:j] = result[2]
+                # absorbing_ub[s][i:j] = result[3]
 
         else:
             # Define jitted function
