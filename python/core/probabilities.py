@@ -179,12 +179,6 @@ def count_rectangular(model, partition, target_points, noise_samples, batch_size
         num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
 
         for (i, j) in tqdm(zip(starts, ends), total=len(starts)):
-            print(type(target_points[i:j]))
-            print(type(noise_samples))
-            print(type(model.partition['boundary'][0]))
-            print(type(model.partition['boundary'][1]))
-            print(type(model.wrap))
-            print(type(partition.region_idx_array))
 
             num_samples_per_region[i:j] = fn_vmap(target_points[i:j],
                                                   len(partition.regions['idxs']),
