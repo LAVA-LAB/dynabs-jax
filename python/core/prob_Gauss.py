@@ -63,9 +63,9 @@ def compute_probabilities(model, partition, reach):
                                    partition.boundary_lb, partition.boundary_ub)
 
         for a in range(len(reach_state[0])):
-            print(p[:,0] > 1e-6)
-            prob[s][a] = p[p[:,0] > 1e-6]
+            print(p[:,a,0] > 1e-6)
+            prob[s][a] = p[p[:,a,0] > 1e-6]
             prob_idx[s][a] = np.arange(partition.size)
-            prob_absorbing[s][a] = pa
+            prob_absorbing[s][a] = pa[a]
 
     return prob, prob_absorbing
