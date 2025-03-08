@@ -51,7 +51,7 @@ class RectangularBackward(object):
         t_total = time.time()
 
         # Vectorized function over different sets of points
-        vmap_backward_reach = jax.vmap(backward_reach, in_axes=(0, None, None, None, None), out_axes=0)
+        vmap_backward_reach = jax.jit(jax.vmap(backward_reach, in_axes=(0, None, None, None, None), out_axes=0))
 
         t = time.time()
         self.target_points = target_points
@@ -69,7 +69,7 @@ class RectangularBackward(object):
 
         self.idxs = np.arange(len(vertices))
         self.vertices = vertices
-        self.target_points = target_points,
+        self.target_points = target_points
         self.A = np.array(A)
         self.b = np.array(b)
 

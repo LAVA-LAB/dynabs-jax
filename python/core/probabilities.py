@@ -192,10 +192,11 @@ def count_rectangular(model, partition, target_points, noise_samples, batch_size
 
     else:
         # Define jitted function
-        fn = jax.jit(normalize_and_count) #, static_argnums=(1))
+        fn = jax.jit(normalize_and_count, static_argnums=(1))
 
         num_samples_per_region = np.zeros((len(target_points), len(partition.regions['idxs'])), dtype=int)
         for i, d in tqdm(enumerate(target_points), total=len(target_points)):
+
             num_samples_per_region[i] = fn(d=d,
                                            num_regions=len(partition.regions['idxs']),
                                            noise_samples=noise_samples,
@@ -308,6 +309,7 @@ def count_single_box(lb_idx, ub_idx, idx_inv, number_per_dim, wrap):
 vmap_count_single_box = jax.jit(jax.vmap(count_single_box, in_axes=(0, 0, None, None, None), out_axes=(0, 0, 0, 0)))
 
 
+@jax.jit
 def normalize_and_count_box(d_lb, d_ub, noise_samples, lb, ub, number_per_dim, wrap, region_idx_inv):
     '''
     Normalize the forward reachable set for a *single action*, such that each region is a unit hypercube

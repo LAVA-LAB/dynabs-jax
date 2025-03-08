@@ -109,10 +109,10 @@ else:
     # Vmap over multiple actions
     fn_vmap = jax.jit(jax.vmap(normalize_and_count_box, in_axes=(0, 0, None, None, None, None, None, None), out_axes=(0, 0, 0, 0)))
 
-    for i in range(len(actions.vertices)):
-        t = time.time()
-        fn_vmap(jnp.array(actions.vertices[i][0]),
-                         jnp.array(actions.vertices[i][1]),
+    for i in tqdm(range(len(actions.vertices))):
+        # t = time.time()
+        fn_vmap(jnp.array(actions.vertices[i][0][0,:]),
+                         jnp.array(actions.vertices[i][1][0,:]),
                          samples,
                          model.partition['boundary'][0],
                          model.partition['boundary'][1],
@@ -120,8 +120,8 @@ else:
                          model.wrap,
                          partition.region_idx_inv)
 
-        print(f'-- Took {(time.time() - t):.3f} sec.')
-        print('-- Number of times function was compiled:', fn_vmap._cache_size())
+        # print(f'-- Took {(time.time() - t):.3f} sec.')
+        # print('-- Number of times function was compiled:', fn_vmap._cache_size())
 
 
 # Load scenario approach table with probability intervals for the given number of samples and confidence level
