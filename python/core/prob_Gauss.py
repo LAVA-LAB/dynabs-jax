@@ -43,7 +43,7 @@ def interval_distribution(x_lbs, x_ubs, mean_lb, mean_ub, cov, state_space_lb, s
     return prob, prob_nonzero, prob_absorbing
 
 # vmap to compute distributions for all actions in a state
-vmap_interval_distribution = jax.jit(jax.vmap(interval_distribution, in_axes=(None, None, 0, 0, None, None, None), out_axes=(0, 0)))
+vmap_interval_distribution = jax.jit(jax.vmap(interval_distribution, in_axes=(None, None, 0, 0, None, None, None), out_axes=(0, 0, 0)))
 
 def compute_probabilities(model, partition, reach):
 
