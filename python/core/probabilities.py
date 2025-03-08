@@ -425,13 +425,16 @@ def count_rectangular_single_state(model, partition, reach, noise_samples, batch
     absorbing_lb = [np.zeros(len(reach[0][0]), dtype=int) for _ in range(len(reach))]
     absorbing_ub = [np.zeros(len(reach[0][0]), dtype=int) for _ in range(len(reach))]
 
+    # Vmap over multiple actions
+    fn_vmap = jax.jit(jax.vmap(normalize_and_count_box, in_axes=(0, 0, None, None, None, None, None, None), out_axes=(0, 0, 0, 0)))
+
+    # Define jitted function
+    fn = jax.jit(normalize_and_count_box)  # , static_argnums=(2,3,4,5,6,7))
+
     for s,reach_state in tqdm(enumerate(reach.values()), total=len(reach)):
 
         # If batch size is > 1, then use vmap version. Otherwise, use plain Python for loop.
         if batch_size > 1:
-
-            # Vmap over multiple actions
-            fn_vmap = jax.jit(jax.vmap(normalize_and_count_box, in_axes=(0, 0, None, None, None, None, None, None), out_axes=(0, 0, 0, 0)))
 
             starts, ends = create_batches(len(reach[s][0]), batch_size)
 
@@ -451,9 +454,6 @@ def count_rectangular_single_state(model, partition, reach, noise_samples, batch
                 absorbing_ub[s][i:j] = result[3]
 
         else:
-            # Define jitted function
-            fn = jax.jit(normalize_and_count_box) #, static_argnums=(2,3,4,5,6,7))
-
             for i, (d_lb, d_ub) in enumerate(zip(reach[s][0], reach[s][1])):
 
                 result = fn(
