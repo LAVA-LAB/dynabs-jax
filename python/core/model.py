@@ -49,13 +49,13 @@ def parse_linear_model(base_model):
                             (model.B @ uAvg + model.q), dtype=float)
 
     # Convert from np to jnp
-    model.A = jnp.array(model.A, dtype=float)
-    model.B = jnp.array(model.B, dtype=float)
-    model.A_inv = jnp.array(model.A_inv, dtype=float)
-    model.B_pinv = jnp.array(model.B_pinv, dtype=float)
-    model.q = jnp.array(model.q, dtype=float)
-    model.uMin = jnp.array(model.uMin, dtype=float)
-    model.uMax = jnp.array(model.uMax, dtype=float)
+    # model.A = jnp.array(model.A, dtype=float)
+    # model.B = jnp.array(model.B, dtype=float)
+    # model.A_inv = jnp.array(model.A_inv, dtype=float)
+    # model.B_pinv = jnp.array(model.B_pinv, dtype=float)
+    # model.q = jnp.array(model.q, dtype=float)
+    # model.uMin = jnp.array(model.uMin, dtype=float)
+    # model.uMax = jnp.array(model.uMax, dtype=float)
 
     print(f'- Model parsing done (took {(time.time() - t):.3f} sec.)')
     print('')
