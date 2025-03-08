@@ -153,6 +153,7 @@ class RectangularPartition(object):
             'A': all_A,
             'b': all_b
         }
+        self.size = len(centers)
 
         t = time.time()
         # Compute halfspace representation of the goal regions

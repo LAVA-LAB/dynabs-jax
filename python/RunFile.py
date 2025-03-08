@@ -104,12 +104,12 @@ samples = sample_noise(model, args.jax_key, args.num_samples)
 
 # %%
 
-# Load scenario approach table with probability intervals for the given number of samples and confidence level
-table_filename = f'intervals_N={args.num_samples}_beta={args.confidence}.csv'
-interval_table = compute_scenario_interval_table(Path(str(args.root_dir), 'interval_tables', table_filename),
-                                                 args.num_samples, args.confidence)
-
 if base_model.linear:
+    # Load scenario approach table with probability intervals for the given number of samples and confidence level
+    table_filename = f'intervals_N={args.num_samples}_beta={args.confidence}.csv'
+    interval_table = compute_scenario_interval_table(Path(str(args.root_dir), 'interval_tables', table_filename),
+                                                     args.num_samples, args.confidence)
+
     # TODO: Investigate using a dense matrix here (generally, it will be very sparse)
     num_samples_per_state = count_samples_per_region(args, model, partition, actions.target_points,
                                                      samples, mode='vmap', batch_size=args.batch_size)

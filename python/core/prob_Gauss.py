@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as jnp
+import numpy as np
 from tqdm import tqdm
 
 # Note: The following implementation only works for Gaussian distributions with diagonal covariance
@@ -46,17 +47,24 @@ vmap_interval_distribution = jax.jit(jax.vmap(interval_distribution, in_axes=(No
 def compute_probabilities(model, partition, reach):
 
     prob = {}
+    prob_idx = {}
     prob_absorbing = {}
 
     # For all states
     for s, reach_state in tqdm(enumerate(reach.values()), total=len(reach)):
+
+        prob[s] = {}
+        prob_idx[s] = {}
+        prob_absorbing[s] = {}
 
         # Compute the probability distribution for every action
         p, pa = vmap_interval_distribution(partition.regions['lower_bounds'], partition.regions['upper_bounds'],
                                    reach_state[0], reach_state[1], model.noise['cov'],
                                    partition.boundary_lb, partition.boundary_ub)
 
-        prob[s] = p
-        prob_absorbing[s] = pa
+        for a in len(reach_state):
+            prob[s][a] = p[p[:,0] > 1e-6]
+            prob_idx[s][a] = np.arange(partition.size)
+            prob_absorbing[s][a] = pa
 
     return prob, prob_absorbing
