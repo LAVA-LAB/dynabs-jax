@@ -16,6 +16,8 @@ from core.imdp import BuilderStorm, BuilderPrism
 
 import benchmarks
 
+jax.config.update("jax_default_matmul_precision", "high")
+
 print('=== JAX STATUS ===')
 print(f'Devices available: {jax.devices()}')
 from jax.lib import xla_bridge
