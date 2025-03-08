@@ -89,7 +89,7 @@ class Dubins(object):
         self.uMax = [2, 2]
 
         self.partition['boundary'] = np.array([[-10, -10, -np.pi, -1], [10, 10, np.pi, 1]])
-        self.partition['number_per_dim'] = np.array([5, 5, 5, 5])
+        self.partition['number_per_dim'] = np.array([8, 8, 8, 8])
 
         self.goal = np.array([
             [[-0.1, -0.1, -np.pi, -0.1], [0.1, 0.1, np.pi, 0.1]]
