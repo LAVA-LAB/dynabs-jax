@@ -137,8 +137,6 @@ else:
 
     P_full2, P_absorbing2 = compute_probabilities_per_dim(model, partition, actions.vertices)
 
-assert False
-
 # %%
 
 # Compute optimal policy on the iMDP abstraction

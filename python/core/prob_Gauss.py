@@ -83,13 +83,13 @@ def interval_distribution_per_dim(n, x_lb_per_dim, x_ub_per_dim, region_idx_inv,
     probs = minmax_Gauss_per_dim(n, x_lb_per_dim, x_ub_per_dim, mean_lb, mean_ub, cov)
 
     # Stack the probability intervals over all dimensions
-    prob_stack = jnp.stack([probs[i][region_idx_inv[:,i]] for i in range(n)], axis=2)
-
-    # Take the product of the lower bounds and the upper bounds to obtain the overall probability intervals
-    prob = jnp.prod(prob_stack, axis=2)
-    # prob = probs[0][region_idx_inv[:,0]]
-    # for i in range(1,n):
-    #     prob = jnp.multiply(prob, probs[i][region_idx_inv[:,i]])
+    # prob_stack = jnp.stack([probs[i][region_idx_inv[:,i]] for i in range(n)], axis=2)
+    #
+    # # Take the product of the lower bounds and the upper bounds to obtain the overall probability intervals
+    # prob = jnp.prod(prob_stack, axis=2)
+    prob = probs[0][region_idx_inv[:,0]]
+    for i in range(1,n):
+        prob = jnp.multiply(prob, probs[i][region_idx_inv[:,i]])
     prob_nonzero = prob[:,1] > 1e-6
 
     # Compute probability to end outside of partition
