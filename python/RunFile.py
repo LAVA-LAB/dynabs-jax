@@ -12,7 +12,7 @@ from core.actions_backward import RectangularBackward, compute_enabled_actions
 from core.actions_forward import RectangularForward
 from core.prob_sample import sample_noise, count_samples_per_region, count_rectangular_single_state, compute_scenario_interval_table, \
     samples_to_intervals, samples_to_intervals_box
-from core.prob_Gauss import compute_probabilities
+from core.prob_Gauss import compute_probabilities, compute_probabilities_per_dim
 from core.imdp import BuilderStorm, BuilderPrism
 
 import benchmarks
@@ -134,6 +134,10 @@ else:
     #                                            round_probabilities=True)
 
     P_full, P_absorbing = compute_probabilities(model, partition, actions.vertices)
+
+    P_full2, P_absorbing2 = compute_probabilities_per_dim(model, partition, actions.vertices)
+
+assert False
 
 # %%
 

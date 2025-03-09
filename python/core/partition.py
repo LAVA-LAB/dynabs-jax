@@ -117,6 +117,8 @@ class RectangularPartition(object):
         from .utils import lexsort4d
         centers_unit = lexsort4d(centers_unit)
 
+        print(centers_unit)
+
         # TODO: Check how to avoid this step
         # Define n-dimensional array (n = dimension of state space) to index elements of the partition
         centers = jnp.array(centers_unit, dtype=int)
@@ -154,6 +156,26 @@ class RectangularPartition(object):
             'b': all_b
         }
         self.size = len(centers)
+
+        # Also store the partition bounds per dimension
+        elems_per_dim = [jnp.arange(num) for num in number_per_dim]
+
+        print(elems_per_dim)
+        print(elems_per_dim[0].shape)
+        print(lb_center.shape)
+
+        centers_per_dim = [elems_per_dim[i] * self.cell_width[i] + lb_center[i] for i in range(model.n)]
+
+        print(centers_per_dim)
+        lower_bounds_per_dim = [centers_per_dim[i] - self.cell_width[i] / 2 for i in range(model.n)]
+        upper_bounds_per_dim = [centers_per_dim[i] + self.cell_width[i] / 2 for i in range(model.n)]
+
+        self.regions_per_dim = {
+            'centers': centers_per_dim,
+            'idxs': elems_per_dim,
+            'lower_bounds': lower_bounds_per_dim,
+            'upper_bounds': upper_bounds_per_dim,
+        }
 
         t = time.time()
         # Compute halfspace representation of the goal regions
