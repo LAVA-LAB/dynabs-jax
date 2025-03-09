@@ -133,7 +133,7 @@ else:
     #                                            interval_table,
     #                                            round_probabilities=True)
 
-    P_full, P_absorbing = compute_probabilities(model, partition, actions.vertices)
+    # P_full, P_absorbing = compute_probabilities(model, partition, actions.vertices)
 
     P_full2, P_absorbing2 = compute_probabilities_per_dim(model, partition, actions.vertices)
 
