@@ -159,14 +159,7 @@ class RectangularPartition(object):
 
         # Also store the partition bounds per dimension
         elems_per_dim = [jnp.arange(num) for num in number_per_dim]
-
-        print(elems_per_dim)
-        print(elems_per_dim[0].shape)
-        print(lb_center.shape)
-
         centers_per_dim = [elems_per_dim[i] * self.cell_width[i] + lb_center[i] for i in range(model.n)]
-
-        print(centers_per_dim)
         lower_bounds_per_dim = [centers_per_dim[i] - self.cell_width[i] / 2 for i in range(model.n)]
         upper_bounds_per_dim = [centers_per_dim[i] + self.cell_width[i] / 2 for i in range(model.n)]
 

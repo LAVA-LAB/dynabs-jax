@@ -89,6 +89,7 @@ def interval_distribution_per_dim(n, x_lb_per_dim, x_ub_per_dim, region_idx_inv,
     prob_low_outer = reduce(jnp.multiply.outer, prob_low).flatten()
     prob_high_outer = reduce(jnp.multiply.outer, prob_high).flatten()
     prob = jnp.stack([prob_low_outer, prob_high_outer]).T
+    prob_nonzero = prob_high_outer > 1e-6
 
     # The following part is only for debugging purposes (to check whether the outer product above gives the correct result)
     if False:
@@ -101,8 +102,6 @@ def interval_distribution_per_dim(n, x_lb_per_dim, x_ub_per_dim, region_idx_inv,
         diff = jnp.abs(prob - prob_stack)
     else:
         diff = 0
-
-    prob_nonzero = prob[:,1] > 1e-6
 
     # Compute probability to end outside of partition
     # TODO: Account for wrapping variables
