@@ -111,7 +111,7 @@ def interval_distribution_per_dim(n, x_lb_per_dim, x_ub_per_dim, region_idx_inv,
     return prob, prob_nonzero, prob_absorbing, diff
 
 # vmap to compute distributions for all actions in a state
-vmap_interval_distribution_per_dim = jax.jit(jax.vmap(interval_distribution_per_dim, in_axes=(None, None, None, None, 0, 0, None, None, None), out_axes=(0, 0, 0, 0)), static_argnums=(0,), backend='cpu')
+vmap_interval_distribution_per_dim = jax.jit(jax.vmap(interval_distribution_per_dim, in_axes=(None, None, None, None, 0, 0, None, None, None), out_axes=(0, 0, 0, 0)), static_argnums=(0,))
 
 def compute_probabilities(model, partition, reach):
 
