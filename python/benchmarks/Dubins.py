@@ -23,7 +23,7 @@ class Dubins(object):
         self.lump = 1
 
         # Discretization step size
-        self.tau = 0.01
+        self.tau = 1
 
         self.n = 4
         self.p = 2
@@ -90,7 +90,7 @@ class Dubins(object):
         self.num_actions = [5,5]
 
         self.partition['boundary'] = np.array([[-10, -10, -np.pi, -1], [10, 10, np.pi, 1]])
-        self.partition['number_per_dim'] = np.array([10, 10, 10, 10])
+        self.partition['number_per_dim'] = np.array([40, 40, 20, 20])
 
         self.goal = np.array([
             [[-2, -2, -np.pi, -0.5], [2, 2, np.pi, 0.5]]

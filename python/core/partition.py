@@ -92,7 +92,7 @@ class RectangularPartition(object):
         t_total = time.time()
 
         # Retrieve necessary data from the model object
-        number_per_dim = model.partition['number_per_dim']
+        self.number_per_dim = model.partition['number_per_dim']
         partition_boundary = model.partition['boundary']
         self.boundary_lb = partition_boundary[0]
         self.boundary_ub = partition_boundary[1]
@@ -104,14 +104,14 @@ class RectangularPartition(object):
 
         t = time.time()
         # From the partition boundary, determine where the first grid centers are placed
-        self.cell_width = (partition_boundary[1] - partition_boundary[0]) / number_per_dim
+        self.cell_width = (partition_boundary[1] - partition_boundary[0]) / self.number_per_dim
         lb_center = partition_boundary[0] + self.cell_width * 0.5
         ub_center = partition_boundary[1] - self.cell_width * 0.5
 
         # First define a grid where each region is a unit cube
         lb_unit = jnp.zeros(len(lb_center), dtype=int)
-        ub_unit = jnp.array(number_per_dim - 1, dtype=int)
-        centers_unit = define_grid_jax(lb_unit, ub_unit, number_per_dim)
+        ub_unit = jnp.array(self.number_per_dim - 1, dtype=int)
+        centers_unit = define_grid_jax(lb_unit, ub_unit, self.number_per_dim)
 
         # TODO: Remove this
         from .utils import lexsort4d
@@ -122,7 +122,7 @@ class RectangularPartition(object):
         # TODO: Check how to avoid this step
         # Define n-dimensional array (n = dimension of state space) to index elements of the partition
         centers = jnp.array(centers_unit, dtype=int)
-        self.region_idx_array = np.zeros(number_per_dim, dtype=int)
+        self.region_idx_array = np.zeros(self.number_per_dim, dtype=int)
         self.region_idx_array[tuple(centers.T)] = np.arange(len(centers))
         self.region_idx_array = jnp.array(self.region_idx_array)
         # Define list with each element containing its index elements
@@ -158,7 +158,7 @@ class RectangularPartition(object):
         self.size = len(centers)
 
         # Also store the partition bounds per dimension
-        elems_per_dim = [jnp.arange(num) for num in number_per_dim]
+        elems_per_dim = [jnp.arange(num) for num in self.number_per_dim]
         centers_per_dim = [elems_per_dim[i] * self.cell_width[i] + lb_center[i] for i in range(model.n)]
         lower_bounds_per_dim = [centers_per_dim[i] - self.cell_width[i] / 2 for i in range(model.n)]
         upper_bounds_per_dim = [centers_per_dim[i] + self.cell_width[i] / 2 for i in range(model.n)]
@@ -172,8 +172,8 @@ class RectangularPartition(object):
 
         t = time.time()
         # Compute halfspace representation of the goal regions
-        goal_centers = np.zeros((len(goal_regions), len(number_per_dim)))
-        goal_widths = np.zeros((len(goal_regions), len(number_per_dim)))
+        goal_centers = np.zeros((len(goal_regions), len(self.number_per_dim)))
+        goal_widths = np.zeros((len(goal_regions), len(self.number_per_dim)))
         for i, goal in enumerate(goal_regions):
             goal_centers[i] = (goal[1] + goal[0]) / 2
             goal_widths[i] = (goal[1] - goal[0]) + EPS

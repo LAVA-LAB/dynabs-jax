@@ -111,7 +111,7 @@ def interval_distribution_per_dim(n, x_lb_per_dim, x_ub_per_dim, region_idx_inv,
     return prob, prob_nonzero, prob_absorbing, diff
 
 # vmap to compute distributions for all actions in a state
-vmap_interval_distribution_per_dim = jax.jit(jax.vmap(interval_distribution_per_dim, in_axes=(None, None, None, None, 0, 0, None, None, None), out_axes=(0, 0, 0, 0)), static_argnums=(0,))
+vmap_interval_distribution_per_dim = jax.jit(jax.vmap(interval_distribution_per_dim, in_axes=(None, None, None, None, 0, 0, None, None, None), out_axes=(0, 0, 0, 0)), static_argnums=(0))
 
 def compute_probabilities(model, partition, reach):
 
@@ -151,6 +151,8 @@ def compute_probabilities_per_dim(model, partition, reach):
     prob_absorbing = {}
     states = np.arange(partition.size)
 
+    # num_keep = jnp.array([1 if model.noise['cov'][i, i] == 0 else partition.number_per_dim[i] for i in range(model.n)], dtype=int)
+
     # For all states
     for s, reach_state in tqdm(enumerate(reach.values()), total=len(reach)):
 
@@ -169,17 +171,26 @@ def compute_probabilities_per_dim(model, partition, reach):
                                                               partition.boundary_lb,
                                                               partition.boundary_ub)
 
-        # print(jnp.max(diff))
-        # p = np.array(p)
-        # p_nonzero = np.array(p_nonzero)
-        # pa = np.array(pa)
-        #
-        # for a in range(len(reach_state[0])):
-        #     prob[s][a] = p[a][p_nonzero[a]]
-        #     prob_idx[s][a] = states[p_nonzero[a]]
-        #     prob_absorbing[s][a] = pa[a]
+        p = np.array(p)
+        p_nonzero = np.array(p_nonzero)
+        pa = np.array(pa)
 
-        prob[s] = np.array(p)
-        prob_absorbing[s] = np.array(pa)
+        for a in range(len(reach_state[0])):
+            prob[s][a] = p[a][p_nonzero[a]]
+            prob_idx[s][a] = states[p_nonzero[a]]
+            prob_absorbing[s][a] = pa[a]
+
+        # prob[s] = np.array(p)
+        # prob_absorbing[s] = np.array(pa)
 
     return prob, prob_absorbing
+
+@partial(jax.jit, static_argnums=(0))
+def compose(n, prob_low, prob_high, nonzero_id):
+    prob_low_outer = reduce(jnp.multiply.outer, prob_low).flatten()
+    prob_high_outer = reduce(jnp.multiply.outer, prob_high).flatten()
+    prob = jnp.stack([prob_low_outer, prob_high_outer]).T
+
+    idx = jnp.asarray(jnp.meshgrid(*nonzero_id)).T.reshape(-1, n)
+
+    return prob, idx
