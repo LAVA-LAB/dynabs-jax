@@ -42,9 +42,13 @@ class BuilderStorm:
             P_full_flat = P_full.reshape(-1, 2)
             P_absorbing_flat = P_absorbing.reshape(-1, 2)
 
-        # P_full_flat = P_full_flat[P_full_flat[:, 1] > 0, :]
-        # P_absorbing_flat = P_absorbing_flat[P_absorbing_flat[:, 1] > 0, :]
+        print('-- Probability intervals reshaped')
+
+        P_full_flat = P_full_flat[P_full_flat[:, 1] > 0, :]
+        P_absorbing_flat = P_absorbing_flat[P_absorbing_flat[:, 1] > 0, :]
         P_unique = np.unique(np.vstack((P_full_flat, P_absorbing_flat)), axis=0)
+
+        print('-- Unique probability intervals extracted')
 
         # Enumerate only over unique probability intervals
         for P in tqdm(P_unique):
@@ -66,7 +70,8 @@ class BuilderStorm:
                         self.intervals_state[s][a][ss] = self.intervals_raw[tuple(P_full[s][a, ss])]
 
                     # Add intervals for other states
-                    self.intervals_absorbing[s][a] = self.intervals_raw[tuple(P_absorbing[s][a])]
+                    if P_absorbing[s][a][1] > 0:
+                        self.intervals_absorbing[s][a] = self.intervals_raw[tuple(P_absorbing[s][a])]
 
         else:
             self.intervals_state[0] = {}
@@ -112,7 +117,8 @@ class BuilderStorm:
                         self.builder.add_next_value(row, ss, intv)
 
                     # Add transitions to absorbing state
-                    self.builder.add_next_value(row, self.absorbing_state, self.intervals_absorbing[s_from][a])
+                    if a in self.intervals_absorbing[s_from]:
+                        self.builder.add_next_value(row, self.absorbing_state, self.intervals_absorbing[s_from][a])
 
                     # for ss in successor_states[a]:
                     #     self.builder.add_next_value(row, ss, self.intervals[tuple(P_full[a, ss])])

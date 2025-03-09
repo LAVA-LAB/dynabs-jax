@@ -151,7 +151,7 @@ if args.checker == 'storm' or args.debug:
                             enabled_actions=np.array(enabled_actions, dtype=bool),
                             P_full=P_full,
                             P_absorbing=P_absorbing)
-    # stormpy.export_to_drn(builderS.imdp, 'out.drn')
+    # stormpy.export_to_drn(builderS.imdpfrom core.imdp , 'out.drn')
     print(f'- Build with storm took: {(time.time() - t):.3f} sec.')
 
     print(builderS.imdp)

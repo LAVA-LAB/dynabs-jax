@@ -214,7 +214,7 @@ class RectangularPartition(object):
             'idxs': critical_regions_idxs,
             'centers': critical_regions_centers
         }
-        print(f"-- Number of goal regions: {len(self.critical['idxs'])}")
+        print(f"-- Number of critical regions: {len(self.critical['idxs'])}")
 
         print(f'Partitioning took {(time.time() - t_total):.3f} sec.')
         print('')

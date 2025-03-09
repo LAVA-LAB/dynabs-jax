@@ -8,7 +8,7 @@ from functools import partial, reduce
 
 @jax.jit
 def integ_Gauss(x_lb, x_ub, x, cov):
-    eps = 1e-9 # Add tiny epsilon to avoid NaN problems if the Gaussian is a Dirac (i.e., cov=0) and x_lb or x_ub equals x
+    eps = 1e-6 # Add tiny epsilon to avoid NaN problems if the Gaussian is a Dirac (i.e., cov=0) and x_lb or x_ub equals x
     return jax.scipy.stats.norm.cdf(x_ub, x+eps, cov) - jax.scipy.stats.norm.cdf(x_lb, x+eps, cov)
 
 # vmap to compute multivariate Gaussian integral in n dimensions
@@ -170,13 +170,16 @@ def compute_probabilities_per_dim(model, partition, reach):
                                                               partition.boundary_ub)
 
         # print(jnp.max(diff))
-        p = np.array(p)
-        p_nonzero = np.array(p_nonzero)
-        pa = np.array(pa)
+        # p = np.array(p)
+        # p_nonzero = np.array(p_nonzero)
+        # pa = np.array(pa)
+        #
+        # for a in range(len(reach_state[0])):
+        #     prob[s][a] = p[a][p_nonzero[a]]
+        #     prob_idx[s][a] = states[p_nonzero[a]]
+        #     prob_absorbing[s][a] = pa[a]
 
-        for a in range(len(reach_state[0])):
-            prob[s][a] = p[a][p_nonzero[a]]
-            prob_idx[s][a] = states[p_nonzero[a]]
-            prob_absorbing[s][a] = pa[a]
+        prob[s] = np.array(p)
+        prob_absorbing[s] = np.array(pa)
 
     return prob, prob_absorbing
