@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 from tqdm import tqdm
-from functools import partial
+from functools import partial, reduce
 
 # Note: The following implementation only works for Gaussian distributions with diagonal covariance
 
@@ -42,6 +42,8 @@ def minmax_Gauss_per_dim(n, x_lb_per_dim, x_ub_per_dim, mean_lb, mean_ub, cov):
     '''
 
     probs = [[] for _ in range(n)]
+    prob_low = [[] for _ in range(n)]
+    prob_high = [[] for _ in range(n)]
 
     for i in range(n):
         x_lb = x_lb_per_dim[i]
@@ -59,8 +61,10 @@ def minmax_Gauss_per_dim(n, x_lb_per_dim, x_ub_per_dim, mean_lb, mean_ub, cov):
         p_min = jnp.minimum(p1, p2)
 
         probs[i] = jnp.vstack([p_min, p_max]).T
+        prob_low[i] = p_min
+        prob_high[i] = p_max
 
-    return probs
+    return probs, prob_low, prob_high
 
 @jax.jit
 def interval_distribution(x_lbs, x_ubs, mean_lb, mean_ub, cov, state_space_lb, state_space_ub):
@@ -80,16 +84,24 @@ vmap_interval_distribution = jax.jit(jax.vmap(interval_distribution, in_axes=(No
 def interval_distribution_per_dim(n, x_lb_per_dim, x_ub_per_dim, region_idx_inv, mean_lb, mean_ub, cov, state_space_lb, state_space_ub):
 
     # Compute the probability intervals for each dimension
-    probs = minmax_Gauss_per_dim(n, x_lb_per_dim, x_ub_per_dim, mean_lb, mean_ub, cov)
+    probs, prob_low, prob_high = minmax_Gauss_per_dim(n, x_lb_per_dim, x_ub_per_dim, mean_lb, mean_ub, cov)
 
-    # Stack the probability intervals over all dimensions
-    # prob_stack = jnp.stack([probs[i][region_idx_inv[:,i]] for i in range(n)], axis=2)
-    #
-    # # Take the product of the lower bounds and the upper bounds to obtain the overall probability intervals
-    # prob = jnp.prod(prob_stack, axis=2)
-    prob = probs[0][region_idx_inv[:,0]]
-    for i in range(1,n):
-        prob = jnp.multiply(prob, probs[i][region_idx_inv[:,i]])
+    prob_low_outer = reduce(jnp.multiply.outer, prob_low).flatten()
+    prob_high_outer = reduce(jnp.multiply.outer, prob_high).flatten()
+    prob = jnp.stack([prob_low_outer, prob_high_outer]).T
+
+    # The following part is only for debugging purposes (to check whether the outer product above gives the correct result)
+    if False:
+        # Stack the probability intervals over all dimensions
+        prob_stack = jnp.stack([probs[i][region_idx_inv[:,i]] for i in range(n)], axis=2)
+
+        # Take the product of the lower bounds and the upper bounds to obtain the overall probability intervals
+        prob_stack = jnp.prod(prob_stack, axis=2)
+
+        diff = jnp.abs(prob - prob_stack)
+    else:
+        diff = 0
+
     prob_nonzero = prob[:,1] > 1e-6
 
     # Compute probability to end outside of partition
@@ -97,10 +109,10 @@ def interval_distribution_per_dim(n, x_lb_per_dim, x_ub_per_dim, region_idx_inv,
     prob_state_space = minmax_Gauss(state_space_lb, state_space_ub, mean_lb, mean_ub, cov)
     prob_absorbing = 1 - prob_state_space[::-1]
 
-    return prob, prob_nonzero, prob_absorbing
+    return prob, prob_nonzero, prob_absorbing, diff
 
 # vmap to compute distributions for all actions in a state
-vmap_interval_distribution_per_dim = jax.jit(jax.vmap(interval_distribution_per_dim, in_axes=(None, None, None, None, 0, 0, None, None, None), out_axes=(0, 0, 0)), static_argnums=(0,))
+vmap_interval_distribution_per_dim = jax.jit(jax.vmap(interval_distribution_per_dim, in_axes=(None, None, None, None, 0, 0, None, None, None), out_axes=(0, 0, 0, 0)), static_argnums=(0,))
 
 def compute_probabilities(model, partition, reach):
 
@@ -148,7 +160,7 @@ def compute_probabilities_per_dim(model, partition, reach):
         prob_absorbing[s] = {}
 
         # Compute the probability distribution for every action
-        p, p_nonzero, pa = vmap_interval_distribution_per_dim(model.n,
+        p, p_nonzero, pa, diff = vmap_interval_distribution_per_dim(model.n,
                                                               partition.regions_per_dim['lower_bounds'],
                                                               partition.regions_per_dim['upper_bounds'],
                                                               partition.region_idx_inv,
@@ -158,6 +170,7 @@ def compute_probabilities_per_dim(model, partition, reach):
                                                               partition.boundary_lb,
                                                               partition.boundary_ub)
 
+        # print(jnp.max(diff))
         p = np.array(p)
         p_nonzero = np.array(p_nonzero)
         pa = np.array(pa)

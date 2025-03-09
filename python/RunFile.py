@@ -31,14 +31,12 @@ args.jax_key = jax.random.PRNGKey(args.seed)
 
 # args.debug = True
 args.model = 'Dubins'
-args.debug = True
-
+# args.debug = True
 # args.batch_size = 1
 
 # In debug mode, configure jax to use Float64 (for more accurate computations)
 if args.debug:
     from jax import config
-
     config.update("jax_enable_x64", True)
 
 # Set current working directory

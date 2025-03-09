@@ -23,7 +23,7 @@ class Dubins(object):
         self.lump = 1
 
         # Discretization step size
-        self.tau = 1.0
+        self.tau = 0.01
 
         self.n = 4
         self.p = 2
@@ -70,8 +70,8 @@ class Dubins(object):
 
         x_next = jnp.array([x_min, x_max]) + self.tau * jnp.concat(setmath.mult([V_min, V_max], setmath.cos(theta_min, theta_max)))
         y_next = jnp.array([y_min, y_max]) + self.tau * jnp.concat(setmath.mult([V_min, V_max], setmath.sin(theta_min, theta_max)))
-        theta_next = jnp.array([theta_min, theta_max]) + jnp.concat(setmath.mult([self.alpha_min, self.alpha_max], [u1_min, u1_max]))
-        V_next = jnp.concat(setmath.mult([self.beta_min, self.beta_max], [V_min, V_max])) + jnp.array([u2_min, u2_max])
+        theta_next = jnp.array([theta_min, theta_max]) + self.tau * jnp.concat(setmath.mult([self.alpha_min, self.alpha_max], [u1_min, u1_max]))
+        V_next = jnp.concat(setmath.mult([self.beta_min, self.beta_max], [V_min, V_max])) + self.tau * jnp.array([u2_min, u2_max])
 
         state_next = jnp.vstack((x_next, y_next, theta_next, V_next))
 
