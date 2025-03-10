@@ -12,7 +12,6 @@ from core.actions_backward import RectangularBackward, compute_enabled_actions
 from core.actions_forward import RectangularForward
 from core.prob_sample import sample_noise, count_samples_per_region, count_rectangular_single_state, compute_scenario_interval_table, \
     samples_to_intervals, samples_to_intervals_box
-from core.prob_Gauss import compute_probabilities, compute_probabilities_per_dim
 from core.imdp import BuilderStorm, BuilderPrism
 
 import benchmarks
@@ -90,7 +89,7 @@ if base_model.linear:
 
 else:
     # Create actions based on forward reachable sets
-    actions = RectangularForward(regions=partition.regions, model=model)
+    actions = RectangularForward(partition=partition, model=model)
 
     # With forward reachability, every action is enabled in every state
     enabled_actions = np.full((len(partition.regions['centers']), len(actions.idxs)), fill_value=True, dtype=np.bool)
@@ -101,6 +100,8 @@ print(f"(Number of enabled actions: {np.sum(np.any(enabled_actions, axis=0))})\n
 samples = sample_noise(model, args.jax_key, args.num_samples)
 
 # %%
+
+from core.prob_Gauss import compute_probabilities, compute_probabilities_per_dim
 
 if base_model.linear:
     # Load scenario approach table with probability intervals for the given number of samples and confidence level
@@ -132,8 +133,8 @@ else:
     #                                            round_probabilities=True)
 
 
-    P_full, P_absorbing = compute_probabilities_per_dim(model, partition, actions.vertices)
-    # P_full_old, P_absorbing_old = compute_probabilities(model, partition, actions.vertices)
+    P_full, P_idx, P_absorbing = compute_probabilities_per_dim(model, partition, actions.frs, actions.max_slice)
+    # P_full_old, P_absorbing_old = compute_probabilities(model, partition, actions.frs)
 
 # %%
 
@@ -150,6 +151,7 @@ if args.checker == 'storm' or args.debug:
                             actions=np.array(actions.idxs, dtype=int),
                             enabled_actions=np.array(enabled_actions, dtype=bool),
                             P_full=P_full,
+                            P_idx=P_idx,
                             P_absorbing=P_absorbing)
     # stormpy.export_to_drn(builderS.imdpfrom core.imdp , 'out.drn')
     print(f'- Build with storm took: {(time.time() - t):.3f} sec.')
@@ -163,6 +165,7 @@ if args.checker == 'storm' or args.debug:
 if args.checker == 'prism' or args.debug:
     print('Create iMDP using prism...')
 
+    # TODO: Incorporate state IDs in Prism builder
     t = time.time()
     builderP = BuilderPrism(state_dependent=not model.linear,
                             states=np.array(partition.regions['idxs']),

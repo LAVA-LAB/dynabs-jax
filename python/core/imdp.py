@@ -27,14 +27,14 @@ class BuilderStorm:
 
         print('- Generate graph for successor states')
         if state_dependent:
-            successor_states = [[np.where(P_full[s][a, :, 1] > 0)[0] for a in actions] for s in states]
+            successor_states = [[np.where(P_full[s][a][:, 1] > 0)[0] for a in actions] for s in states]
         else:
-            successor_states = [[np.where(P_full[a, :, 1] > 0)[0] for a in actions]]
+            successor_states = [[np.where(P_full[a][:, 1] > 0)[0] for a in actions]]
 
         # Reshape all probability intervals
         print('- Generate pycarl intervals...')
         if state_dependent:
-            P_full_flat = np.concatenate(list(P_full.values()))
+            P_full_flat = np.concatenate([np.concatenate(list(P.values())) for P in P_full.values()])
             P_absorbing_flat = np.concatenate(list(P_absorbing.values()))
             P_full_flat = P_full_flat.reshape(-1, 2)
             P_absorbing_flat = P_absorbing_flat.reshape(-1, 2)
@@ -67,7 +67,7 @@ class BuilderStorm:
 
                     # Add intervals for each successor state
                     for ss in successor_states[s][a]:
-                        self.intervals_state[s][a][ss] = self.intervals_raw[tuple(P_full[s][a, ss])]
+                        self.intervals_state[s][a][ss] = self.intervals_raw[tuple(P_full[s][a][ss])]
 
                     # Add intervals for other states
                     if P_absorbing[s][a][1] > 0:

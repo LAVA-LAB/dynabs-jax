@@ -56,6 +56,8 @@ def parse_linear_model(base_model):
     model.q = jnp.array(model.q, dtype=float)
     model.uMin = jnp.array(model.uMin, dtype=float)
     model.uMax = jnp.array(model.uMax, dtype=float)
+    model.noise['cov'] = jnp.array(model.noise['cov'])
+    model.noise['cov_diag'] = jnp.array(model.noise['cov_diag'])
 
     print(f'- Model parsing done (took {(time.time() - t):.3f} sec.)')
     print('')
@@ -76,6 +78,10 @@ def parse_nonlinear_model(model):
     # Control limitations
     model.uMin = jnp.array(model.uMin, dtype=float)
     model.uMax = jnp.array(model.uMax, dtype=float)
+
+    # Convert from np to jnp
+    model.noise['cov'] = jnp.array(model.noise['cov'])
+    model.noise['cov_diag'] = jnp.array(model.noise['cov_diag'])
 
     # Determine vertices of the control input space
     stacked = np.vstack((model.uMin, model.uMax))

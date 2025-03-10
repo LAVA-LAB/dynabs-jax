@@ -40,6 +40,7 @@ class Dubins(object):
         # Covariance of the process noise
         self.noise = dict()
         self.noise['cov'] = np.diag([0, 0, 0.1, 0])
+        self.noise['cov_diag'] = np.array([0, 0, 0.1, 0])
 
         return
 
@@ -85,19 +86,19 @@ class Dubins(object):
         self.targets = {}
 
         # Authority limit for the control u, both positive and negative
-        self.uMin = [-2, -2,]
-        self.uMax = [2, 2]
+        self.uMin = [-0.5*np.pi, -4]
+        self.uMax = [0.5*np.pi, 4]
         self.num_actions = [5,5]
 
-        self.partition['boundary'] = np.array([[-10, -10, -np.pi, -1], [10, 10, np.pi, 1]])
-        self.partition['number_per_dim'] = np.array([40, 40, 20, 20])
+        self.partition['boundary'] = np.array([[-10, -10, -np.pi, -4], [10, 10, np.pi, 4]])
+        self.partition['number_per_dim'] = np.array([20, 20, 20, 20])
 
         self.goal = np.array([
-            [[-2, -2, -np.pi, -0.5], [2, 2, np.pi, 0.5]]
+            [[0, -10, -np.pi, -4], [10, 10, np.pi, 4]]
         ], dtype=float)
 
         self.critical = np.array([
-            [[-10, -10, -np.pi, -1], [-9, -9, np.pi, 1]],
+            [[-10, -10, -np.pi, -4], [-9, -9, np.pi, 4]],
         ], dtype=float)
 
         return
