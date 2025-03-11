@@ -10,7 +10,7 @@ class BuilderStorm:
     Construct iMDP
     """
 
-    def __init__(self, state_dependent, states, goal_regions, critical_regions, actions, enabled_actions, P_full, P_absorbing):
+    def __init__(self, region_idx_array, state_dependent, states, goal_regions, critical_regions, actions, enabled_actions, P_full, P_idx, P_id, P_nonzero, P_absorbing):
 
         import pycarl
         import stormpy
@@ -27,25 +27,28 @@ class BuilderStorm:
 
         print('- Generate graph for successor states')
         if state_dependent:
-            successor_states = [[np.where(P_full[s][a][:, 1] > 0)[0] for a in actions] for s in states]
+            self.successor_states = [[ P_id[s][a][P_nonzero[s][a]] for a in actions] for s in states]
+            self.probabilities = [[P_full[s][a][P_nonzero[s][a]] for a in actions] for s in states]
+            # self.successor_states = [[np.where(P_full[s][a][:, 1] > 0)[0] for a in actions] for s in states]
         else:
-            successor_states = [[np.where(P_full[a][:, 1] > 0)[0] for a in actions]]
+            self.successor_states = [[np.where(P_full[a][:, 1] > 0)[0] for a in actions]]
 
         # Reshape all probability intervals
         print('- Generate pycarl intervals...')
         if state_dependent:
-            P_full_flat = np.concatenate([np.concatenate(list(P.values())) for P in P_full.values()])
+            P_full_flat = np.concatenate([ np.concatenate(Ps) for Ps in self.probabilities])
+            # P_full_flat = np.concatenate([np.concatenate(list(P.values())) for P in P_full.values()])
             P_absorbing_flat = np.concatenate(list(P_absorbing.values()))
-            P_full_flat = P_full_flat.reshape(-1, 2)
-            P_absorbing_flat = P_absorbing_flat.reshape(-1, 2)
+            # P_full_flat = P_full_flat.reshape(-1, 2)
+            # P_absorbing_flat = P_absorbing_flat.reshape(-1, 2)
         else:
             P_full_flat = P_full.reshape(-1, 2)
             P_absorbing_flat = P_absorbing.reshape(-1, 2)
 
         print('-- Probability intervals reshaped')
 
-        P_full_flat = P_full_flat[P_full_flat[:, 1] > 0, :]
-        P_absorbing_flat = P_absorbing_flat[P_absorbing_flat[:, 1] > 0, :]
+        # P_full_flat = P_full_flat[P_full_flat[:, 1] > 0, :]
+        # P_absorbing_flat = P_absorbing_flat[P_absorbing_flat[:, 1] > 0, :]
         P_unique = np.unique(np.vstack((P_full_flat, P_absorbing_flat)), axis=0)
 
         print('-- Unique probability intervals extracted')
@@ -66,8 +69,8 @@ class BuilderStorm:
                     self.intervals_state[s][a] = {}
 
                     # Add intervals for each successor state
-                    for ss in successor_states[s][a]:
-                        self.intervals_state[s][a][ss] = self.intervals_raw[tuple(P_full[s][a][ss])]
+                    for ss,prob in zip(self.successor_states[s][a], self.probabilities[s][a]):
+                        self.intervals_state[s][a][ss] = self.intervals_raw[tuple(prob)]
 
                     # Add intervals for other states
                     if P_absorbing[s][a][1] > 0:
@@ -80,7 +83,7 @@ class BuilderStorm:
                 self.intervals_state[0][a] = {}
 
                 # Add intervals for each successor state
-                for ss in successor_states[0][a]:
+                for ss in self.successor_states[0][a]:
                     self.intervals_state[0][a][ss] = self.intervals_raw[tuple(P_full[a, ss])]
 
                 # Add intervals for other states
@@ -105,8 +108,12 @@ class BuilderStorm:
             enabled_in_s = np.where(enabled_actions[s])[0]
 
             # If no actions are enabled at all, add a deterministic transition to the absorbing state
-            if len(enabled_in_s) == 0 or s in critical_regions or s in goal_regions:
+            if len(enabled_in_s) == 0 or s in critical_regions:
                 self.builder.add_next_value(row, self.absorbing_state, self.intervals_raw[(1, 1)])
+                row += 1
+
+            elif s in goal_regions:
+                self.builder.add_next_value(row, s, self.intervals_raw[(1, 1)])
                 row += 1
 
             else:
@@ -120,7 +127,7 @@ class BuilderStorm:
                     if a in self.intervals_absorbing[s_from]:
                         self.builder.add_next_value(row, self.absorbing_state, self.intervals_absorbing[s_from][a])
 
-                    # for ss in successor_states[a]:
+                    # for ss in self.successor_states[a]:
                     #     self.builder.add_next_value(row, ss, self.intervals[tuple(P_full[a, ss])])
 
                     # # Add transitions to absorbing state
@@ -188,6 +195,46 @@ class BuilderStorm:
 
         self.results = np.array(result_generator.get_values())[:self.nr_states]
 
+    def get_label(self, s):
+
+        label = ''
+        if 'goal' in self.imdp.states[s].labels:
+            label += 'goal,'
+        elif 'absorbing' in self.imdp.states[s].labels:
+            label += 'absorbing,'
+        elif 'critical' in self.imdp.states[s].labels:
+            label += 'critical,'
+
+        return label
+
+    def print_transitions(self, state, action, actions, partition):
+        print('\n----------')
+
+        print('From state {} at position {} (label: {}), with action {} with inputs {}:'.format(state, partition.region_idx_inv[state], self.get_label(state), action, actions.inputs[action]))
+        print(' - Optimal value: {}'.format(self.results[state]))
+        print(' ---')
+        print(' - State lower bound: {}'.format(partition.regions['lower_bounds'][state]))
+        print(' - State upper bound: {}'.format(partition.regions['upper_bounds'][state]))
+        print(' ---')
+        print(' - Action FRS lower bound: {}'.format(actions.frs[state]['lb'][action]))
+        print(' - Action FRS upper bound: {}'.format(actions.frs[state]['ub'][action]))
+        print(' ---')
+
+        try:
+            SA = self.imdp.states[state].actions[action]
+
+            for transition in SA.transitions:
+                s_prime = transition.column
+                if s_prime < len(partition.region_idx_inv):
+                    idx = partition.region_idx_inv[s_prime]
+                else:
+                    idx = '<out-partition>'
+                print(" --- With probability {}, go to state {} at position {} (label: {})".format(transition.value(), s_prime, idx, self.get_label(s_prime)))
+
+        except:
+            print(' - Error: This action does not exist in this state')
+
+        print('----------')
 
 class BuilderPrism:
     """

@@ -18,8 +18,8 @@ def forward_reach(step_set, state_min, state_max, input, cov_diag, number_per_di
     state_min_norm = (frs_min - boundary_lb) / (boundary_ub - boundary_lb) * number_per_dim
     lb_contained_in = state_min_norm // 1
 
-    idx_low = (jnp.clip(lb_contained_in, 0, number_per_dim) * (cov_diag == 0)).astype(int)
-    idx_upp = (jnp.clip(lb_contained_in + frs_span, 0, number_per_dim) * (cov_diag == 0) + number_per_dim * (cov_diag != 0)).astype(int)
+    idx_low = (jnp.clip(lb_contained_in, 0, (number_per_dim - 1)) * (cov_diag == 0)).astype(int)
+    idx_upp = (jnp.clip(lb_contained_in + frs_span - 1, 0, number_per_dim - 1) * (cov_diag == 0) + (number_per_dim - 1) * (cov_diag != 0)).astype(int)
 
     return frs_min, frs_max, frs_span, idx_low, idx_upp
 
@@ -46,11 +46,11 @@ class RectangularForward(object):
             frs[i] = {}
             frs[i]['lb'] = flb
             frs[i]['ub'] = fub
-            frs[i]['span'] = fsp
+            # frs[i]['span'] = fsp
             frs[i]['idx_lb'] = fil
             frs[i]['idx_ub'] = fiu
 
-            self.max_slice = np.maximum(self.max_slice, jnp.max(fiu - fil, axis=0))
+            self.max_slice = np.maximum(self.max_slice, jnp.max(fiu + 1 - fil, axis=0))
         self.max_slice = tuple(np.astype(self.max_slice, int).tolist())
 
         print(f'- Forward reachable sets computed (took {(time.time() - t):.3f} sec.)')

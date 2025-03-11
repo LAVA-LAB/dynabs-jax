@@ -12,7 +12,6 @@ from core.actions_backward import RectangularBackward, compute_enabled_actions
 from core.actions_forward import RectangularForward
 from core.prob_sample import sample_noise, count_samples_per_region, count_rectangular_single_state, compute_scenario_interval_table, \
     samples_to_intervals, samples_to_intervals_box
-from core.imdp import BuilderStorm, BuilderPrism
 
 import benchmarks
 
@@ -120,23 +119,13 @@ if base_model.linear:
                                                round_probabilities=True)
 
 else:
-    # region_lb, region_ub, absorbing_lb, absorbing_ub = \
-    #     count_rectangular_single_state(model, partition, actions.vertices, samples, args.batch_size)
-    #
-    # # Compute probability intervals
-    # P_full, P_absorbing = samples_to_intervals_box(args.num_samples,
-    #                                            region_lb,
-    #                                            region_ub,
-    #                                            absorbing_lb,
-    #                                            absorbing_ub,
-    #                                            interval_table,
-    #                                            round_probabilities=True)
 
-
-    P_full, P_idx, P_absorbing = compute_probabilities_per_dim(model, partition, actions.frs, actions.max_slice)
+    P_full, P_idx, P_id, P_nonzero, P_absorbing = compute_probabilities_per_dim(model, partition, actions.frs, actions.max_slice)
     # P_full_old, P_absorbing_old = compute_probabilities(model, partition, actions.frs)
 
 # %%
+
+from core.imdp import BuilderStorm, BuilderPrism
 
 # Compute optimal policy on the iMDP abstraction
 if args.checker == 'storm' or args.debug:
@@ -144,7 +133,8 @@ if args.checker == 'storm' or args.debug:
 
     # Build interval MDP via StormPy
     t = time.time()
-    builderS = BuilderStorm(state_dependent=not model.linear,
+    builderS = BuilderStorm(region_idx_array=np.array(partition.region_idx_array),
+                            state_dependent=not model.linear,
                             states=np.array(partition.regions['idxs']),
                             goal_regions=np.array(partition.goal['idxs']),
                             critical_regions=np.array(partition.critical['idxs']),
@@ -152,6 +142,8 @@ if args.checker == 'storm' or args.debug:
                             enabled_actions=np.array(enabled_actions, dtype=bool),
                             P_full=P_full,
                             P_idx=P_idx,
+                            P_id=P_id,
+                            P_nonzero=P_nonzero,
                             P_absorbing=P_absorbing)
     # stormpy.export_to_drn(builderS.imdpfrom core.imdp , 'out.drn')
     print(f'- Build with storm took: {(time.time() - t):.3f} sec.')
@@ -161,6 +153,10 @@ if args.checker == 'storm' or args.debug:
     t = time.time()
     builderS.compute_reach_avoid()
     print(f'- Verify with storm took: {(time.time() - t):.3f} sec.')
+
+    builderS.print_transitions(3456, 0, actions, partition)
+    builderS.print_transitions(5555, 0, actions, partition)
+    builderS.print_transitions(4020, 0, actions, partition)
 
 if args.checker == 'prism' or args.debug:
     print('Create iMDP using prism...')

@@ -28,10 +28,10 @@ class Dubins(object):
         self.n = 4
         self.p = 2
 
-        self.alpha_min = 0.8
-        self.alpha_max = 1.0
+        self.alpha_min = 0.9
+        self.alpha_max = 0.9
 
-        self.beta_min = 0.8
+        self.beta_min = 0.9
         self.beta_max = 0.9
 
         self.state_variables = ['x', 'y', 'angle', 'velocity']
@@ -86,15 +86,15 @@ class Dubins(object):
         self.targets = {}
 
         # Authority limit for the control u, both positive and negative
-        self.uMin = [-0.5*np.pi, -4]
-        self.uMax = [0.5*np.pi, 4]
-        self.num_actions = [5,5]
+        self.uMin = [-0.5*np.pi, -5]
+        self.uMax = [0.5*np.pi, 5]
+        self.num_actions = [20,20]
 
-        self.partition['boundary'] = np.array([[-10, -10, -np.pi, -4], [10, 10, np.pi, 4]])
-        self.partition['number_per_dim'] = np.array([20, 20, 20, 20])
+        self.partition['boundary'] = np.array([[-10, -10, -np.pi, -6], [10, 10, np.pi, 6]])
+        self.partition['number_per_dim'] = np.array([20, 20, 10, 10])
 
         self.goal = np.array([
-            [[0, -10, -np.pi, -4], [10, 10, np.pi, 4]]
+            [[0, -10, -np.pi, -6], [10, 10, np.pi, 6]]
         ], dtype=float)
 
         self.critical = np.array([
