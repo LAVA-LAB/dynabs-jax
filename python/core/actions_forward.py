@@ -43,6 +43,7 @@ class RectangularForward(object):
         for i,(lb,ub) in pbar:
             # For every state, compute for every action the [lb,ub] forward reachable set
             flb, fub, fsp, fil, fiu = vmap_forward_reach(model.step_set, lb, ub, discrete_inputs, model.noise['cov_diag'], partition.number_per_dim, partition.cell_width, partition.boundary_lb, partition.boundary_ub)
+
             frs[i] = {}
             frs[i]['lb'] = flb
             frs[i]['ub'] = fub

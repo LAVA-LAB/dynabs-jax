@@ -24,6 +24,11 @@ print(f'Jax runs on: {xla_bridge.get_backend().platform}')
 print('==================\n')
 
 args = parse_arguments()
+if args.gpu:
+    jax.config.update('jax_platform_name', 'gpu')
+else:
+    jax.config.update('jax_platform_name', 'cpu')
+
 np.random.seed(args.seed)
 args.jax_key = jax.random.PRNGKey(args.seed)
 
@@ -55,6 +60,8 @@ elif args.model == 'Spacecraft':
     base_model = benchmarks.Spacecraft()
 elif args.model == 'Dubins':
     base_model = benchmarks.Dubins()
+elif args.model == 'Dubins_small':
+    base_model = benchmarks.Dubins_small()
 else:
     assert False, f"The passed model '{args.model}' could not be found"
 
@@ -100,7 +107,7 @@ samples = sample_noise(model, args.jax_key, args.num_samples)
 
 # %%
 
-from core.prob_Gauss import compute_probabilities, compute_probabilities_per_dim
+from core.prob_Gauss import compute_probabilities_per_dim
 
 if base_model.linear:
     # Load scenario approach table with probability intervals for the given number of samples and confidence level
@@ -120,8 +127,7 @@ if base_model.linear:
 
 else:
 
-    P_full, P_idx, P_id, P_nonzero, P_absorbing = compute_probabilities_per_dim(model, partition, actions.frs, actions.max_slice)
-    # P_full_old, P_absorbing_old = compute_probabilities(model, partition, actions.frs)
+    P_full, P_id, P_nonzero, P_absorbing = compute_probabilities_per_dim(args, model, partition, actions.frs, actions.max_slice)
 
 # %%
 
@@ -133,30 +139,38 @@ if args.checker == 'storm' or args.debug:
 
     # Build interval MDP via StormPy
     t = time.time()
-    builderS = BuilderStorm(region_idx_array=np.array(partition.region_idx_array),
-                            state_dependent=not model.linear,
+    builderS = BuilderStorm(args=args,
+                            partition=partition,
                             states=np.array(partition.regions['idxs']),
+                            x0=model.x0,
                             goal_regions=np.array(partition.goal['idxs']),
                             critical_regions=np.array(partition.critical['idxs']),
-                            actions=np.array(actions.idxs, dtype=int),
-                            enabled_actions=np.array(enabled_actions, dtype=bool),
                             P_full=P_full,
-                            P_idx=P_idx,
                             P_id=P_id,
-                            P_nonzero=P_nonzero,
                             P_absorbing=P_absorbing)
     # stormpy.export_to_drn(builderS.imdpfrom core.imdp , 'out.drn')
     print(f'- Build with storm took: {(time.time() - t):.3f} sec.')
 
     print(builderS.imdp)
 
+    # del partition
+    # del actions
+    # del P_full
+    # del P_id
+    # del P_nonzero
+    # del P_absorbing
+
     t = time.time()
     builderS.compute_reach_avoid()
     print(f'- Verify with storm took: {(time.time() - t):.3f} sec.')
 
-    builderS.print_transitions(3456, 0, actions, partition)
-    builderS.print_transitions(5555, 0, actions, partition)
-    builderS.print_transitions(4020, 0, actions, partition)
+    # builderS.print_transitions(3456, 0, actions, partition)
+    # builderS.print_transitions(5555, 0, actions, partition)
+    # builderS.print_transitions(4020, 0, actions, partition)
+
+    print('Total sum of reach probs:',np.sum(builderS.results))
+    # x0 = [5, 15, 3, 5]
+    # print('In state {}: {}'.format(x0, builderS.get_value_from_tuple(x0, partition.region_idx_array)))
 
 if args.checker == 'prism' or args.debug:
     print('Create iMDP using prism...')

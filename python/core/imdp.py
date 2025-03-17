@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from .utils import writeFile
 from tqdm import tqdm
+import time
 
 
 class BuilderStorm:
@@ -10,7 +11,7 @@ class BuilderStorm:
     Construct iMDP
     """
 
-    def __init__(self, region_idx_array, state_dependent, states, goal_regions, critical_regions, actions, enabled_actions, P_full, P_idx, P_id, P_nonzero, P_absorbing):
+    def __init__(self, args, partition, states, x0, goal_regions, critical_regions, P_full, P_id, P_absorbing):
 
         import pycarl
         import stormpy
@@ -25,33 +26,24 @@ class BuilderStorm:
         self.intervals_raw = {}
         self.intervals_raw[(1, 1)] = pycarl.Interval(1, 1)
 
-        print('- Generate graph for successor states')
-        if state_dependent:
-            self.successor_states = [[ P_id[s][a][P_nonzero[s][a]] for a in actions] for s in states]
-            self.probabilities = [[P_full[s][a][P_nonzero[s][a]] for a in actions] for s in states]
-            # self.successor_states = [[np.where(P_full[s][a][:, 1] > 0)[0] for a in actions] for s in states]
-        else:
-            self.successor_states = [[np.where(P_full[a][:, 1] > 0)[0] for a in actions]]
-
         # Reshape all probability intervals
         print('- Generate pycarl intervals...')
-        if state_dependent:
-            P_full_flat = np.concatenate([ np.concatenate(Ps) for Ps in self.probabilities])
-            # P_full_flat = np.concatenate([np.concatenate(list(P.values())) for P in P_full.values()])
-            P_absorbing_flat = np.concatenate(list(P_absorbing.values()))
-            # P_full_flat = P_full_flat.reshape(-1, 2)
-            # P_absorbing_flat = P_absorbing_flat.reshape(-1, 2)
-        else:
-            P_full_flat = P_full.reshape(-1, 2)
-            P_absorbing_flat = P_absorbing.reshape(-1, 2)
+        P_full_flat = np.concatenate([ np.concatenate(Ps) for Ps in P_full if len(Ps) > 0])
+        P_absorbing_flat = np.concatenate(list(P_absorbing.values()))
 
         print('-- Probability intervals reshaped')
 
-        # P_full_flat = P_full_flat[P_full_flat[:, 1] > 0, :]
-        # P_absorbing_flat = P_absorbing_flat[P_absorbing_flat[:, 1] > 0, :]
-        P_unique = np.unique(np.vstack((P_full_flat, P_absorbing_flat)), axis=0)
+        P_stacked = np.vstack((P_full_flat, P_absorbing_flat))
 
-        print('-- Unique probability intervals extracted')
+        # t = time.time()
+        # P_unique = np.round(np.unique(P_stacked, axis=0), 4)
+        # print(f'- Numpy took {(time.time() - t):.3f} sec.')
+        # t = time.time()
+        P_unique = np.round(np.sort(pd.DataFrame(P_stacked).drop_duplicates(), axis=0), args.decimals)
+        # print(f'- Pandas took {(time.time() - t):.3f} sec.')
+        # assert np.all(P_unique2 == P_unique)
+
+        print('-- Unique probability intervals determined')
 
         # Enumerate only over unique probability intervals
         for P in tqdm(P_unique):
@@ -60,34 +52,22 @@ class BuilderStorm:
         self.intervals_state = {}
         self.intervals_absorbing = {}
 
+        print('-- Pycarl intervals created')
+
         print('\n- Store intervals for individual transitions...')
-        if state_dependent:
-            for s in tqdm(states):
-                self.intervals_state[s] = {}
-                self.intervals_absorbing[s] = {}
-                for a in np.array(actions):
-                    self.intervals_state[s][a] = {}
-
-                    # Add intervals for each successor state
-                    for ss,prob in zip(self.successor_states[s][a], self.probabilities[s][a]):
-                        self.intervals_state[s][a][ss] = self.intervals_raw[tuple(prob)]
-
-                    # Add intervals for other states
-                    if P_absorbing[s][a][1] > 0:
-                        self.intervals_absorbing[s][a] = self.intervals_raw[tuple(P_absorbing[s][a])]
-
-        else:
-            self.intervals_state[0] = {}
-            self.intervals_absorbing[0] = {}
-            for a in tqdm(np.array(actions)):
-                self.intervals_state[0][a] = {}
+        for s in tqdm(states):
+            self.intervals_state[s] = {}
+            self.intervals_absorbing[s] = {}
+            for i,a in enumerate(P_id[s].keys()):
+                self.intervals_state[s][a] = {}
 
                 # Add intervals for each successor state
-                for ss in self.successor_states[0][a]:
-                    self.intervals_state[0][a][ss] = self.intervals_raw[tuple(P_full[a, ss])]
+                for s_next,prob in zip(P_id[s][a], P_full[s][i]):
+                    self.intervals_state[s][a][s_next] = self.intervals_raw[tuple(prob)]
 
                 # Add intervals for other states
-                self.intervals_absorbing[0][a] = self.intervals_raw[tuple(P_absorbing[a])]
+                if P_absorbing[s][a][1] > 0:
+                    self.intervals_absorbing[s][a] = self.intervals_raw[tuple(P_absorbing[s][a])]
 
         row = 0
         states_created = 0
@@ -96,16 +76,10 @@ class BuilderStorm:
         print('\n- Build iMDP...')
         for s in tqdm(states):
 
-            # If action probability intervals are state-dependent, then use the actual state id
-            if state_dependent:
-                s_from = s
-            else:
-                s_from = 0
-
             # For each state, create a new row group
             self.builder.new_row_group(row)
             states_created += 1
-            enabled_in_s = np.where(enabled_actions[s])[0]
+            enabled_in_s = P_id[s].keys()
 
             # If no actions are enabled at all, add a deterministic transition to the absorbing state
             if len(enabled_in_s) == 0 or s in critical_regions:
@@ -120,12 +94,12 @@ class BuilderStorm:
 
                 # For every enabled action
                 for a in enabled_in_s:
-                    for ss, intv in self.intervals_state[s_from][a].items():
-                        self.builder.add_next_value(row, ss, intv)
+                    for s_next, intv in self.intervals_state[s][a].items():
+                        self.builder.add_next_value(row, s_next, intv)
 
                     # Add transitions to absorbing state
-                    if a in self.intervals_absorbing[s_from]:
-                        self.builder.add_next_value(row, self.absorbing_state, self.intervals_absorbing[s_from][a])
+                    if a in self.intervals_absorbing[s]:
+                        self.builder.add_next_value(row, self.absorbing_state, self.intervals_absorbing[s][a])
 
                     # for ss in self.successor_states[a]:
                     #     self.builder.add_next_value(row, ss, self.intervals[tuple(P_full[a, ss])])
@@ -143,9 +117,9 @@ class BuilderStorm:
                     # For each (s,a) pair, increment the row count by one
                     row += 1
 
-        for ss in [self.absorbing_state]:
+        for s in [self.absorbing_state]:
             self.builder.new_row_group(row)
-            self.builder.add_next_value(row, ss, self.intervals_raw[(1, 1)])
+            self.builder.add_next_value(row, s, self.intervals_raw[(1, 1)])
             row += 1
             states_created += 1
 
@@ -159,8 +133,8 @@ class BuilderStorm:
 
         # Define initial states
         state_labeling.add_label('init')
-        # TODO Fix initial state
-        state_labeling.add_label_to_state('init', 10)
+        s_init, _ = partition.x2state(x0)
+        state_labeling.add_label_to_state('init', s_init)
 
         # Add absorbing (unsafe) states
         state_labeling.add_label('absorbing')
@@ -208,6 +182,10 @@ class BuilderStorm:
         return label
 
     def print_transitions(self, state, action, actions, partition):
+
+        if type(state) in [list,tuple]:
+            state = int(partition.region_idx_array[tuple(state)])
+
         print('\n----------')
 
         print('From state {} at position {} (label: {}), with action {} with inputs {}:'.format(state, partition.region_idx_inv[state], self.get_label(state), action, actions.inputs[action]))
@@ -235,6 +213,10 @@ class BuilderStorm:
             print(' - Error: This action does not exist in this state')
 
         print('----------')
+
+    def get_value_from_tuple(self, x, region_idx_inv):
+        s = region_idx_inv[tuple(x)]
+        return self.results[s]
 
 class BuilderPrism:
     """

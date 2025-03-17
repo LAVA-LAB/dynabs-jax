@@ -17,6 +17,11 @@ def parse_arguments():
                         help="If True, perform additional checks to debug python")
     parser.add_argument('--seed', type=int, default=0,
                         help="Seed for random number generators (Jax, Numpy)")
+    parser.add_argument('--decimals', type=int, default=4,
+                        help="Number of decimals to work with for storing probabilities")
+
+    parser.add_argument('--gpu', action=argparse.BooleanOptionalAction, default=False,
+                        help="If true, run on GPU. Otherwise, run on CPU")
 
     parser.add_argument('--num_samples', type=int, default=1000,
                         help="Number of samples to compute probability intervals for")

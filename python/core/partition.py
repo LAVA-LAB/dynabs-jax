@@ -117,8 +117,6 @@ class RectangularPartition(object):
         from .utils import lexsort4d
         centers_unit = lexsort4d(centers_unit)
 
-        print(centers_unit)
-
         # TODO: Check how to avoid this step
         # Define n-dimensional array (n = dimension of state space) to index elements of the partition
         centers = jnp.array(centers_unit, dtype=int)
@@ -219,3 +217,17 @@ class RectangularPartition(object):
         print(f'Partitioning took {(time.time() - t_total):.3f} sec.')
         print('')
         return
+
+    def x2state(self, x):
+        # Discard samples outside of partition
+        in_partition = np.all((x >= self.boundary_lb) * (x <= self.boundary_ub))
+
+        if in_partition:
+            # Normalize samples
+            x_norm = np.array(((x - self.boundary_lb) / (self.boundary_ub - self.boundary_lb) * self.number_per_dim) // 1, dtype=int)
+            state = int(self.region_idx_array[tuple(x_norm)])
+            return state, True
+
+        else:
+            return self.size, False
+
