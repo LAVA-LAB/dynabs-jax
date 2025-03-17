@@ -17,17 +17,17 @@ import benchmarks
 
 jax.config.update("jax_default_matmul_precision", "high")
 
-print('=== JAX STATUS ===')
-print(f'Devices available: {jax.devices()}')
-from jax.lib import xla_bridge
-print(f'Jax runs on: {xla_bridge.get_backend().platform}')
-print('==================\n')
-
 args = parse_arguments()
 if args.gpu:
     jax.config.update('jax_platform_name', 'gpu')
 else:
     jax.config.update('jax_platform_name', 'cpu')
+
+print('=== JAX STATUS ===')
+print(f'Devices available: {jax.devices()}')
+from jax.lib import xla_bridge
+print(f'Jax runs on: {xla_bridge.get_backend().platform}')
+print('==================\n')
 
 np.random.seed(args.seed)
 args.jax_key = jax.random.PRNGKey(args.seed)
@@ -135,7 +135,7 @@ from core.imdp import BuilderStorm, BuilderPrism
 
 # Compute optimal policy on the iMDP abstraction
 if args.checker == 'storm' or args.debug:
-    print('Create iMDP using storm...')
+    print('\nCreate iMDP using storm...')
 
     # Build interval MDP via StormPy
     t = time.time()
@@ -173,7 +173,7 @@ if args.checker == 'storm' or args.debug:
     # print('In state {}: {}'.format(x0, builderS.get_value_from_tuple(x0, partition.region_idx_array)))
 
 if args.checker == 'prism' or args.debug:
-    print('Create iMDP using prism...')
+    print('\nCreate iMDP using prism...')
 
     # TODO: Incorporate state IDs in Prism builder
     t = time.time()
