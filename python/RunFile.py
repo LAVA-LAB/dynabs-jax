@@ -33,7 +33,7 @@ np.random.seed(args.seed)
 args.jax_key = jax.random.PRNGKey(args.seed)
 
 # args.debug = True
-args.model = 'Dubins'
+# args.model = 'Dubins'
 # args.debug = True
 # args.batch_size = 1
 
