@@ -28,11 +28,11 @@ class Dubins(object):
         self.n = 4
         self.p = 2
 
-        self.alpha_min = 0.9
-        self.alpha_max = 0.9
+        self.alpha_min = 0.80
+        self.alpha_max = 0.90
 
-        self.beta_min = 1.0
-        self.beta_max = 1.0
+        self.beta_min = 0.90
+        self.beta_max = 0.95
 
         self.state_variables = ['x', 'y', 'angle', 'velocity']
         self.wrap = jnp.array([False, False, True, False], dtype=bool)
