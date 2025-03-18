@@ -92,7 +92,7 @@ def minmax_Gauss_per_dim(n, wrap, x_lb_per_dim, x_ub_per_dim, mean_lb, mean_ub, 
     return probs, prob_low, prob_high
 
 @partial(jax.jit, static_argnums=(0,1,2,4))
-def interval_distribution_per_dim(n, max_slice, wrap, wrap_array, decimals, number_per_dim, per_dim_lb, per_dim_ub, i_lb, mean_lb, mean_ub, cov, state_space_lb, state_space_ub, region_idx_array):
+def interval_distribution_per_dim(n, max_slice, wrap, wrap_array, decimals, number_per_dim, per_dim_lb, per_dim_ub, i_lb, mean_lb, mean_ub, cov, state_space_lb, state_space_ub, region_idx_array, unsafe_states):
 
     # Extract slices from the partition elements per dimension
     x_lb = [dynslice(per_dim_lb[i], i_lb[i], max_slice[i]) for i in range(n)]
@@ -133,13 +133,14 @@ def interval_distribution_per_dim(n, max_slice, wrap, wrap_array, decimals, numb
     prob_absorbing = jnp.maximum(p_lowest * (prob_absorbing[1] > 0), prob_absorbing)
 
     # Keep this distribution only if the probability of reaching the absorbing state is less than given threshold
-    threshold = 0.5
-    keep = ~((jnp.sum(prob[:,0]) < threshold) * (prob_absorbing[1] > threshold))
+    threshold = 0.1
+    unsafe_states_slice = unsafe_states[prob_id]
+    keep = ~(((jnp.sum(prob[:,0] * ~unsafe_states_slice)) < 1-threshold) * ((prob_absorbing[1] + jnp.sum(prob[:,1] * unsafe_states_slice)) > threshold))
 
     return prob, prob_idx, prob_id, prob_nonzero, prob_absorbing, keep
 
 # vmap to compute distributions for all actions in a state
-vmap_interval_distribution_per_dim = jax.jit(jax.vmap(interval_distribution_per_dim, in_axes=(None, None, None, None, None, None, None, None, 0, 0, 0, None, None, None, None), out_axes=(0, 0, 0, 0, 0, 0)), static_argnums=(0,1,2,4))
+vmap_interval_distribution_per_dim = jax.jit(jax.vmap(interval_distribution_per_dim, in_axes=(None, None, None, None, None, None, None, None, 0, 0, 0, None, None, None, None, None), out_axes=(0, 0, 0, 0, 0, 0)), static_argnums=(0,1,2,4))
 
 def compute_probabilities_per_dim(args, model, partition, frs, max_slice):
 
@@ -151,7 +152,7 @@ def compute_probabilities_per_dim(args, model, partition, frs, max_slice):
 
     # For all states
     for s, frs_s in tqdm(enumerate(frs.values()), total=len(frs)):
-        p, _, p_id, p_nonzero, pa, k = vmap_interval_distribution_per_dim(model.n,
+        p, p_idx, p_id, p_nonzero, pa, k = vmap_interval_distribution_per_dim(model.n,
                                                               max_slice,
                                                               tuple(np.array(model.wrap)),
                                                               model.wrap,
@@ -165,7 +166,8 @@ def compute_probabilities_per_dim(args, model, partition, frs, max_slice):
                                                               model.noise['cov'],
                                                               partition.boundary_lb,
                                                               partition.boundary_ub,
-                                                              partition.region_idx_array)
+                                                              partition.region_idx_array,
+                                                              partition.critical['bools'])
 
         keep[s] = np.array(k, dtype=bool)
         prob[s] = np.array(p)

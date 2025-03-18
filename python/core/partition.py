@@ -169,23 +169,28 @@ class RectangularPartition(object):
         }
 
         t = time.time()
-        # Compute halfspace representation of the goal regions
-        goal_centers = np.zeros((len(goal_regions), len(self.number_per_dim)))
-        goal_widths = np.zeros((len(goal_regions), len(self.number_per_dim)))
-        for i, goal in enumerate(goal_regions):
-            goal_centers[i] = (goal[1] + goal[0]) / 2
-            goal_widths[i] = (goal[1] - goal[0]) + EPS
+        if len(critical_regions) > 0:
+            # Compute halfspace representation of the goal regions
+            goal_centers = np.zeros((len(goal_regions), len(self.number_per_dim)))
+            goal_widths = np.zeros((len(goal_regions), len(self.number_per_dim)))
+            for i, goal in enumerate(goal_regions):
+                goal_centers[i] = (goal[1] + goal[0]) / 2
+                goal_widths[i] = (goal[1] - goal[0]) + EPS
 
-        goal_centers = jnp.array(goal_centers, dtype=float)
-        goal_widths = jnp.array(goal_widths, dtype=float)
+            goal_centers = jnp.array(goal_centers, dtype=float)
+            goal_widths = jnp.array(goal_widths, dtype=float)
 
-        vmap_center2halfspace = jax.vmap(center2halfspace, in_axes=(0, 0), out_axes=(0, 0))
-        goals_A, goals_b = vmap_center2halfspace(goal_centers, goal_widths)
+            vmap_center2halfspace = jax.vmap(center2halfspace, in_axes=(0, 0), out_axes=(0, 0))
+            goals_A, goals_b = vmap_center2halfspace(goal_centers, goal_widths)
 
-        # Determine goal regions
-        goal_regions_bools = vmap_check_if_region_in_goal(goals_A, goals_b, all_vertices)
-        goal_regions_idxs = region_idxs[goal_regions_bools]
-        goal_regions_centers = centers[goal_regions_bools]
+            # Determine goal regions
+            goal_regions_bools = vmap_check_if_region_in_goal(goals_A, goals_b, all_vertices)
+            goal_regions_idxs = region_idxs[goal_regions_bools]
+            goal_regions_centers = centers[goal_regions_bools]
+        else:
+            goal_regions_bools = jnp.full(self.size, False, dtype=bool)
+            goal_regions_idxs = jnp.array([], dtype=int)
+            goal_regions_centers = jnp.array([], dtype=float)
         print(f'- Goal regions defined (took {(time.time() - t):.3f} sec.)')
 
         self.goal = {
@@ -196,15 +201,20 @@ class RectangularPartition(object):
         print(f"-- Number of goal regions: {len(self.goal['idxs'])}")
 
         t = time.time()
-        # Check which regions (hyperrectangles) are *not* disjoint from the critical regions (also hyperrectangles)
-        critical_lbs = critical_regions[:, 0, :]
-        critical_ubs = critical_regions[:, 1, :]
+        if len(critical_regions) > 0:
+            # Check which regions (hyperrectangles) are *not* disjoint from the critical regions (also hyperrectangles)
+            critical_lbs = critical_regions[:, 0, :]
+            critical_ubs = critical_regions[:, 1, :]
 
-        vfun = jax.jit(jax.vmap(hyperrectangles_isdisjoint_multi, in_axes=(0, 0, None, None), out_axes=0))
-        critical_regions_bools = ~vfun(self.regions['lower_bounds'], self.regions['upper_bounds'],
-                                       critical_lbs + EPS, critical_ubs - EPS)
-        critical_regions_idxs = region_idxs[critical_regions_bools]
-        critical_regions_centers = centers[critical_regions_bools]
+            vfun = jax.jit(jax.vmap(hyperrectangles_isdisjoint_multi, in_axes=(0, 0, None, None), out_axes=0))
+            critical_regions_bools = ~vfun(self.regions['lower_bounds'], self.regions['upper_bounds'],
+                                           critical_lbs + EPS, critical_ubs - EPS)
+            critical_regions_idxs = region_idxs[critical_regions_bools]
+            critical_regions_centers = centers[critical_regions_bools]
+        else:
+            critical_regions_bools = jnp.full(self.size, False, dtype=bool)
+            critical_regions_idxs = jnp.array([], dtype=int)
+            critical_regions_centers = jnp.array([], dtype=float)
         print(f'- Critical regions defined (took {(time.time() - t):.3f} sec.)')
 
         self.critical = {
