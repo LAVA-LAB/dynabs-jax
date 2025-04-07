@@ -1,26 +1,29 @@
-import numpy as np
-import scipy
-import jax.numpy as jnp
-from core.dynamics import setmath
-import jax
 from functools import partial
+
+import jax
+import jax.numpy as jnp
+import numpy as np
+
+from core.dynamics import setmath
+
 
 def wrap_theta(theta):
     return (theta + np.pi) % (2 * np.pi) - np.pi
 
+
 class Dubins_small(object):
 
-    def __init__(self):
+    def __init__(self, args):
         '''
         Defines the 2D drone benchmark, with a 4D LTI system
         '''
 
         self.linear = False
-
-        self.set_model()
+        self.set_model(args)
         self.set_spec()
+        print('')
 
-    def set_model(self):
+    def set_model(self, args):
         # Set value of delta (how many time steps are grouped together)
         # Used to make the model fully actuated
         self.lump = 1
@@ -61,7 +64,6 @@ class Dubins_small(object):
     #     return state_next
 
     def step(self, state, action, noise):
-
         [x, y, theta] = state
         [u1, u2] = action
         x_next = x + self.tau * u2 * np.cos(theta)
@@ -73,7 +75,6 @@ class Dubins_small(object):
 
     @partial(jax.jit, static_argnums=(0))
     def step_set(self, state_min, state_max, action_min, action_max):
-
         # Convert to boxes
         state_min, state_max = setmath.box(jnp.array(state_min), jnp.array(state_max))
         [x_min, y_min, theta_min] = state_min
@@ -87,8 +88,8 @@ class Dubins_small(object):
         y_next = jnp.array([y_min, y_max]) + self.tau * jnp.concat(setmath.mult([u2_min, u2_max], setmath.sin(theta_min, theta_max)))
         theta_next = jnp.array([theta_min, theta_max]) + self.tau * jnp.concat(setmath.mult([self.alpha_min, self.alpha_max], [u1_min, u1_max]))
 
-        state_next = jnp.vstack((x_next, #jnp.clip(x_next, self.partition['boundary_jnp'][0][0] + 1e-3, self.partition['boundary_jnp'][1][0] - 1e-3),
-                                 y_next, #jnp.clip(y_next, self.partition['boundary_jnp'][0][1] + 1e-3, self.partition['boundary_jnp'][1][1] - 1e-3),
+        state_next = jnp.vstack((x_next,  # jnp.clip(x_next, self.partition['boundary_jnp'][0][0] + 1e-3, self.partition['boundary_jnp'][1][0] - 1e-3),
+                                 y_next,  # jnp.clip(y_next, self.partition['boundary_jnp'][0][1] + 1e-3, self.partition['boundary_jnp'][1][1] - 1e-3),
                                  theta_next))
 
         state_next_min = jnp.min(state_next, axis=1)
@@ -101,9 +102,9 @@ class Dubins_small(object):
         self.targets = {}
 
         # Authority limit for the control u, both positive and negative
-        self.uMin = [-0.50*np.pi, -3]
-        self.uMax = [0.50*np.pi, 3]
-        self.num_actions = [7,5]
+        self.uMin = [-0.50 * np.pi, -3]
+        self.uMax = [0.50 * np.pi, 3]
+        self.num_actions = [7, 5]
 
         self.partition['boundary'] = np.array([[-10, -10, -np.pi], [10, 10, np.pi]])
         self.partition['boundary_jnp'] = jnp.array(self.partition['boundary'])

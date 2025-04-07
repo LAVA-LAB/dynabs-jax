@@ -1,26 +1,29 @@
-import numpy as np
-import scipy
-import jax.numpy as jnp
-from core.dynamics import setmath
-import jax
 from functools import partial
+
+import jax
+import jax.numpy as jnp
+import numpy as np
+
+from core.dynamics import setmath
+
 
 def wrap_theta(theta):
     return (theta + np.pi) % (2 * np.pi) - np.pi
 
+
 class Dubins(object):
 
-    def __init__(self):
+    def __init__(self, args):
         '''
         Defines the 2D drone benchmark, with a 4D LTI system
         '''
 
         self.linear = False
-
-        self.set_model()
+        self.set_model(args)
         self.set_spec()
+        print('')
 
-    def set_model(self):
+    def set_model(self, args):
         # Set value of delta (how many time steps are grouped together)
         # Used to make the model fully actuated
         self.lump = 1
@@ -31,9 +34,8 @@ class Dubins(object):
         self.n = 4
         self.p = 2
 
-        mode = 2
-
-        if mode == 0:
+        if args.model_version == 0:
+            print('- Load Dubins without parameter uncertainty')
             # No parameter uncertainty
             self.alpha_min = 0.85
             self.alpha_max = 0.85
@@ -42,25 +44,18 @@ class Dubins(object):
             self.beta_min = 0.85
             self.beta_max = 0.85
             self.beta = 0.85
-        elif mode == 1:
-            # Low parameter uncertainty
-            self.alpha_min = 0.85
-            self.alpha_max = 0.90
-            self.alpha = 0.88
-
-            self.beta_min = 0.85
-            self.beta_max = 0.90
-            self.beta = 0.88
-        elif mode == 2:
+        elif args.model_version == 1:
+            print('- Load Dubins with uncertain parameters in the interval [0.80,0.90]')
             # High parameter uncertainty
             self.alpha_min = 0.80
             self.alpha_max = 0.90
-            self.alpha = 0.81
+            self.alpha = 0.85
 
             self.beta_min = 0.80
             self.beta_max = 0.90
-            self.beta = 0.89
-        elif mode == 3:
+            self.beta = 0.85
+        else:
+            print('- Load Dubins with uncertain parameters in the interval [0.75,0.95]')
             # High parameter uncertainty
             self.alpha_min = 0.75
             self.alpha_max = 0.95
@@ -68,15 +63,6 @@ class Dubins(object):
 
             self.beta_min = 0.75
             self.beta_max = 0.95
-            self.beta = 0.85
-        else:
-            # High parameter uncertainty
-            self.alpha_min = 0.7
-            self.alpha_max = 1.0
-            self.alpha = 0.85
-
-            self.beta_min = 0.7
-            self.beta_max = 1.0
             self.beta = 0.85
 
         self.state_variables = ['x', 'y', 'angle', 'velocity']
@@ -135,8 +121,8 @@ class Dubins(object):
         theta_next = jnp.array([theta_min, theta_max]) + self.tau * jnp.concat(setmath.mult([self.alpha_min, self.alpha_max], [u1_min, u1_max]))
         V_next = jnp.concat(setmath.mult([self.beta_min, self.beta_max], [V_min, V_max])) + self.tau * jnp.array([u2_min, u2_max])
 
-        state_next = jnp.vstack((x_next, #jnp.clip(x_next, self.partition['boundary_jnp'][0][0] + 1e-3, self.partition['boundary_jnp'][1][0] - 1e-3),
-                                 y_next, #jnp.clip(y_next, self.partition['boundary_jnp'][0][1] + 1e-3, self.partition['boundary_jnp'][1][1] - 1e-3),
+        state_next = jnp.vstack((x_next,  # jnp.clip(x_next, self.partition['boundary_jnp'][0][0] + 1e-3, self.partition['boundary_jnp'][1][0] - 1e-3),
+                                 y_next,  # jnp.clip(y_next, self.partition['boundary_jnp'][0][1] + 1e-3, self.partition['boundary_jnp'][1][1] - 1e-3),
                                  theta_next,
                                  jnp.clip(V_next, self.partition['boundary_jnp'][0][3] + jnp.array([1e-3, 2e-3]), self.partition['boundary_jnp'][1][3] - jnp.array([2e-3, 1e-3]))))
 
@@ -154,8 +140,8 @@ class Dubins(object):
         if layout == 1:
 
             # Authority limit for the control u, both positive and negative
-            self.uMin = [-0.5*np.pi, -5]
-            self.uMax = [0.5*np.pi, 5]
+            self.uMin = [-0.5 * np.pi, -5]
+            self.uMax = [0.5 * np.pi, 5]
             self.num_actions = [6, 6]
 
             self.partition['boundary'] = np.array([[0, 0, -np.pi, -5], [10, 10, np.pi, 5]])
@@ -163,7 +149,7 @@ class Dubins(object):
             self.partition['number_per_dim'] = np.array([20, 20, 20, 20])
 
             self.goal = np.array([
-                [[6, 6, -2*np.pi, -10], [9, 9, 2*np.pi, 10]]
+                [[6, 6, -2 * np.pi, -10], [9, 9, 2 * np.pi, 10]]
             ], dtype=float)
 
             self.critical = np.array([

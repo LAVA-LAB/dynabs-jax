@@ -1,6 +1,5 @@
-import jax
-import jax.numpy as jnp
 import numpy as np
+
 
 def create_batches(data_length, batch_size):
     '''
@@ -16,16 +15,17 @@ def create_batches(data_length, batch_size):
 
     return starts, ends
 
-def lexsort4d(array):
 
+def lexsort4d(array):
     idxs = np.lexsort((
-        array[:,3],
-        array[:,2],
-        array[:,1],
-        array[:,0]
+        array[:, 3],
+        array[:, 2],
+        array[:, 1],
+        array[:, 0]
     ))
 
     return array[idxs]
+
 
 def writeFile(file, operation="w", content=[""]):
     '''
@@ -49,6 +49,7 @@ def writeFile(file, operation="w", content=[""]):
     filehandle.writelines(content)
     filehandle.close()
 
+
 def cm2inch(*tupl):
     '''
     Convert centimeters to inches
@@ -60,8 +61,8 @@ def cm2inch(*tupl):
     else:
         return tuple(i / inch for i in tupl)
 
-def remove_consecutive_duplicates(trace):
 
+def remove_consecutive_duplicates(trace):
     done = False
     i = 0
     while not done:

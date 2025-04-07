@@ -1,17 +1,12 @@
-from re import I
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
-from matplotlib import cm
-from matplotlib.patches import Rectangle
-import matplotlib.patches as patches
-from pathlib import Path
 
 
-def heatmap(idx_show, slice_values, partition, model, results, title='auto'):
+def heatmap(stamp, idx_show, slice_values, partition, results):
     '''
-    Create heat map for the reachability probability from any initial state.
+    Create heat map for the satisfaction probability from any initial state.
 
     Parameters
     ----------
@@ -41,7 +36,7 @@ def heatmap(idx_show, slice_values, partition, model, results, title='auto'):
             state_idx = partition.region_idx_array[tuple(slice_at)]
 
             # Fill heatmap value
-            values[y,x] = results[state_idx]
+            values[y, x] = results[state_idx]
 
     X = partition.regions_per_dim['centers'][i1]
     Y = partition.regions_per_dim['centers'][i2]
@@ -51,7 +46,7 @@ def heatmap(idx_show, slice_values, partition, model, results, title='auto'):
     sns.heatmap(DF)
 
     # Save figure
-    plt.savefig('heatmap.pdf', format='pdf', bbox_inches='tight')
-    plt.savefig('heatmap.png', format='png', bbox_inches='tight')
+    plt.savefig(f'output/heatmap_{stamp}.pdf', format='pdf', bbox_inches='tight')
+    plt.savefig(f'output/heatmap_{stamp}.png', format='png', bbox_inches='tight')
 
     plt.show()

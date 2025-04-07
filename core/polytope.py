@@ -1,6 +1,5 @@
 import jax
 import jax.numpy as jnp
-from functools import partial
 
 
 def points_in_polytope(A, b, points):

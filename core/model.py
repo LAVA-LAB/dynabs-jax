@@ -1,8 +1,8 @@
-import numpy as np
-import jax.numpy as jnp
-import jax
 import itertools
 import time
+
+import jax.numpy as jnp
+import numpy as np
 
 
 def parse_linear_model(base_model):
@@ -46,7 +46,7 @@ def parse_linear_model(base_model):
     uAvg = (model.uMin + model.uMax) / 2
     if np.linalg.matrix_rank(np.eye(model.n) - model.A) == model.n:
         model.equilibrium = jnp.array(np.linalg.inv(np.eye(model.n) - model.A) @ \
-                            (model.B @ uAvg + model.q), dtype=float)
+                                      (model.B @ uAvg + model.q), dtype=float)
 
     # Convert from np to jnp
     model.A = jnp.array(model.A, dtype=float)

@@ -1,12 +1,12 @@
-import numpy as np
-import jax.numpy as jnp
-from functools import partial
-import jax
-import time
-import cdd
 import itertools
+import time
+from functools import partial
+
+import jax
+import jax.numpy as jnp
+import numpy as np
 from tqdm import tqdm
-from .utils import create_batches
+
 
 @partial(jax.jit, static_argnums=(0))
 def forward_reach(step_set, state_min, state_max, input, cov_diag, number_per_dim, cell_width, boundary_lb, boundary_ub):
@@ -23,6 +23,7 @@ def forward_reach(step_set, state_min, state_max, input, cov_diag, number_per_di
 
     return frs_min, frs_max, frs_span, idx_low, idx_upp
 
+
 class RectangularForward(object):
 
     def __init__(self, partition, model):
@@ -30,7 +31,7 @@ class RectangularForward(object):
         t_total = time.time()
 
         # Vectorized function over different sets of points
-        vmap_forward_reach = jax.vmap(forward_reach, in_axes=(None, None, None, 0, None, None, None, None, None), out_axes=(0,0,0,0,0,))
+        vmap_forward_reach = jax.vmap(forward_reach, in_axes=(None, None, None, 0, None, None, None, None, None), out_axes=(0, 0, 0, 0, 0,))
 
         discrete_per_dimension = [np.linspace(model.uMin[i], model.uMax[i], num=model.num_actions[i]) for i in range(len(model.num_actions))]
         discrete_inputs = np.array(list(itertools.product(*discrete_per_dimension)))
@@ -40,14 +41,14 @@ class RectangularForward(object):
         frs = {}
         pbar = tqdm(enumerate(zip(partition.regions['lower_bounds'], partition.regions['upper_bounds'])), total=len(partition.regions['lower_bounds']))
         self.max_slice = np.zeros(model.n)
-        for i,(lb,ub) in pbar:
+        for i, (lb, ub) in pbar:
             # For every state, compute for every action the [lb,ub] forward reachable set
-            flb, fub, fsp, fil, fiu = vmap_forward_reach(model.step_set, lb, ub, discrete_inputs, model.noise['cov_diag'], partition.number_per_dim, partition.cell_width, partition.boundary_lb, partition.boundary_ub)
+            flb, fub, fsp, fil, fiu = vmap_forward_reach(model.step_set, lb, ub, discrete_inputs, model.noise['cov_diag'], partition.number_per_dim, partition.cell_width,
+                                                         partition.boundary_lb, partition.boundary_ub)
 
             frs[i] = {}
             frs[i]['lb'] = flb
             frs[i]['ub'] = fub
-            # frs[i]['span'] = fsp
             frs[i]['idx_lb'] = fil
             frs[i]['idx_ub'] = fiu
 

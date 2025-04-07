@@ -1,9 +1,9 @@
-import numpy as np
-import jax.numpy as jnp
-import jax
-import itertools
 import time
-from tqdm import tqdm
+
+import jax
+import jax.numpy as jnp
+import numpy as np
+
 from .polytope import hyperrectangles_isdisjoint_multi
 
 EPS = 1e-3
@@ -240,4 +240,3 @@ class RectangularPartition(object):
 
         else:
             return self.size, False
-

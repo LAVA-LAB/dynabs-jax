@@ -1,6 +1,6 @@
 import numpy as np
-import pandas as pd
 from tqdm import tqdm
+
 
 class MonteCarloSim():
     '''
@@ -147,12 +147,12 @@ class MonteCarloSim():
             if self.verbose:
                 print(f'In state {s[k]} (x = {x[k]}), take action {a[k]} (u = {u[k]})')
 
-            x[k+1] = self.model.step(x[k], u[k], self.noise[m, k])
+            x[k + 1] = self.model.step(x[k], u[k], self.noise[m, k])
 
             # Add current state, belief, etc. to trace
-            trace['k'] += [k+1]
+            trace['k'] += [k + 1]
             trace['u'] += [u[k]]
-            trace['x'] += [x[k+1]]
+            trace['x'] += [x[k + 1]]
 
             # Increase iterator variable by one
             k += 1

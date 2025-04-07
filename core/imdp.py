@@ -1,9 +1,10 @@
 import logging
+
 import numpy as np
 import pandas as pd
-from .utils import writeFile
 from tqdm import tqdm
-import time
+
+from .utils import writeFile
 
 
 class BuilderStorm:
@@ -13,7 +14,6 @@ class BuilderStorm:
 
     def __init__(self, args, partition, actions, states, x0, goal_regions, critical_regions, P_full, P_id, P_absorbing):
 
-        import pycarl
         import stormpy
 
         self.builder = stormpy.IntervalSparseMatrixBuilder(rows=0, columns=0, entries=0, force_dimensions=False,
@@ -24,11 +24,11 @@ class BuilderStorm:
 
         # Predefine the pycarl intervals
         self.intervals_raw = {}
-        self.intervals_raw[(1, 1)] = pycarl.Interval(1, 1)
+        self.intervals_raw[(1, 1)] = stormpy.pycarl.Interval(1, 1)
 
         # Reshape all probability intervals
         print('- Generate pycarl intervals...')
-        P_full_flat = np.concatenate([ np.concatenate(Ps) for Ps in P_full if len(Ps) > 0])
+        P_full_flat = np.concatenate([np.concatenate(Ps) for Ps in P_full if len(Ps) > 0])
         P_absorbing_flat = np.concatenate([Ps for Ps in P_absorbing if len(Ps) > 0])
 
         print('-- Probability intervals reshaped')
@@ -47,7 +47,7 @@ class BuilderStorm:
 
         # Enumerate only over unique probability intervals
         for P in tqdm(P_unique):
-            self.intervals_raw[tuple(P)] = pycarl.Interval(P[0], P[1])
+            self.intervals_raw[tuple(P)] = stormpy.pycarl.Interval(P[0], P[1])
 
         self.intervals_state = {}
         self.intervals_absorbing = {}
@@ -58,11 +58,11 @@ class BuilderStorm:
         for s in tqdm(states):
             self.intervals_state[s] = {}
             self.intervals_absorbing[s] = {}
-            for i,a in enumerate(P_id[s].keys()):
+            for i, a in enumerate(P_id[s].keys()):
                 self.intervals_state[s][a] = {}
 
                 # Add intervals for each successor state
-                for s_next,prob in zip(P_id[s][a], P_full[s][i]):
+                for s_next, prob in zip(P_id[s][a], P_full[s][i]):
                     self.intervals_state[s][a][s_next] = self.intervals_raw[tuple(prob)]
 
                 # Add intervals for other states
@@ -73,7 +73,7 @@ class BuilderStorm:
         states_created = 0
 
         # Total number of choices = sum of choices in all states (always >=1), and always a single choice in a goal/critical state. Add one for the absorbing state.
-        total_choices = np.sum([max(1,len(p.keys())) if s not in goal_regions and s not in critical_regions else 1 for s,p in P_id.items()]) + 1
+        total_choices = np.sum([max(1, len(p.keys())) if s not in goal_regions and s not in critical_regions else 1 for s, p in P_id.items()]) + 1
         choice_labeling = stormpy.storage.ChoiceLabeling(total_choices)
         choice_labels = {str(i) for i in range(-1, len(actions.inputs))}
         for label in choice_labels:
@@ -215,12 +215,13 @@ class BuilderStorm:
 
     def print_transitions(self, state, action, actions, partition):
 
-        if type(state) in [list,tuple]:
+        if type(state) in [list, tuple]:
             state = int(partition.region_idx_array[tuple(state)])
 
         print('\n----------')
 
-        print('From state {} at position {} (label: {}), with action {} with inputs {}:'.format(state, partition.region_idx_inv[state], self.get_label(state), action, actions.inputs[action]))
+        print('From state {} at position {} (label: {}), with action {} with inputs {}:'.format(state, partition.region_idx_inv[state], self.get_label(state), action,
+                                                                                                actions.inputs[action]))
         print(' - Optimal value: {}'.format(self.results[state]))
         print(' ---')
         print(' - State lower bound: {}'.format(partition.regions['lower_bounds'][state]))
@@ -250,6 +251,7 @@ class BuilderStorm:
         s = partition.x2state(x)
         # s = region_idx_inv[tuple(x)]
         return self.results[s]
+
 
 class BuilderPrism:
     """
