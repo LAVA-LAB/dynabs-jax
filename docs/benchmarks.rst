@@ -1,8 +1,5 @@
-benchmarks package
+benchmarks
 ==================
-
-Submodules
-----------
 
 benchmarks.Dubins module
 ------------------------
@@ -16,14 +13,6 @@ benchmarks.Dubins\_small module
 -------------------------------
 
 .. automodule:: benchmarks.Dubins_small
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-Module contents
----------------
-
-.. automodule:: benchmarks
    :members:
    :show-inheritance:
    :undoc-members:

@@ -8,6 +8,9 @@ import numpy as np
 def parse_linear_model(base_model):
     '''
     Parse linear dynamical model
+
+    :param base_model: Input model.
+    :return: Model object
     '''
 
     print('Parse linear dynamical model...')
@@ -67,6 +70,9 @@ def parse_linear_model(base_model):
 def parse_nonlinear_model(model):
     '''
     Parse nonlinear dynamical model
+
+    :param base_model: Input model.
+    :return: Model object
     '''
 
     print('Parse nonlinear dynamical model...')
@@ -94,20 +100,11 @@ def parse_nonlinear_model(model):
 
 def make_fully_actuated(model, manualDimension='auto'):
     '''
-    Given a model in `model`, render it fully actuated.
+    Given a parsed model, render it fully actuated. Only available for linear models.
 
-    Parameters
-    ----------
-    model : dict
-        Main dictionary of the LTI system model.
-    manualDimension : int or str, optional
-        Desired dimension of the state of the model The default is 'auto'.
-
-    Returns
-    -------
-    model : dict
-        Main dictionary of the LTI system model, which is now fully actuated.
-
+    :param model: Parsed model object.
+    :param manualDimension: Integer or 'auto'. If 'auto', then the dimension is determined automatically. If an integer, than that number of of time steps is lumped together used.
+    :return: Model object.
     '''
 
     if manualDimension == 'auto':

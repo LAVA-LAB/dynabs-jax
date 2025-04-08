@@ -8,9 +8,16 @@ from tqdm import tqdm
 
 # Note: The following implementation only works for Gaussian distributions with diagonal covariance
 
-
 @partial(jax.jit, static_argnums=(2))
 def dynslice(V, idx_low, size):
+    '''
+    Given a vector of indices, keep only those starting at position idx_low and of length size.
+
+    :param V: Vector of indices.
+    :param idx_low: Index to start slice at.
+    :param size: Number of elements to keep in slice.
+    :return: Slice of V.
+    '''
     roll = jnp.roll(V, -idx_low)
     # roll_zero = roll.at[size:].set(0)
     return roll[:size]
@@ -18,6 +25,15 @@ def dynslice(V, idx_low, size):
 
 @jax.jit
 def integ_Gauss(x_lb, x_ub, x, cov):
+    '''
+    Integrate a univariate Gaussian distribution over a given interval.
+
+    :param x_lb: Lower bound of the interval.
+    :param x_ub: Upper bound of the interval.
+    :param x: Mean of the Gaussian distribution.
+    :param cov: Covariance of the Gaussian distribution.
+    :return:
+    '''
     eps = 1e-4  # Add tiny epsilon to avoid NaN problems if the Gaussian is a Dirac (i.e., cov=0) and x_lb or x_ub equals x
     return jax.scipy.stats.norm.cdf(x_ub, x + eps, cov) - jax.scipy.stats.norm.cdf(x_lb, x + eps, cov)
 
@@ -30,6 +46,18 @@ vmap_integ_Gauss_per_dim_single = jax.jit(jax.vmap(integ_Gauss, in_axes=(0, 0, N
 
 @jax.jit
 def minmax_Gauss(x_lb, x_ub, mean_lb, mean_ub, cov, wrap_array):
+    '''
+    Compute the min/max integral of a multivariate Gaussian distribution over a given interval, where the mean of the Gaussian lies in [mean_lb, mean_ub].
+
+    :param x_lb: Lower bound of the interval.
+    :param x_ub: Upper bound of the interval.
+    :param mean_lb: Lower bound of the mean of the Gaussian distribution.
+    :param mean_ub: Upper bound of the mean of the Gaussian distribution.
+    :param cov: Covariance of the Gaussian distribution.
+    :param wrap_array: Wrap at the indices where this array is True.
+    :return: Min/max probabilities.
+    '''
+
     # Determine point closest to mean of region over which to integrate
     mean = (x_lb + x_ub) / 2
     closest_to_mean = jnp.maximum(jnp.minimum(mean_ub, mean), mean_lb)
@@ -47,7 +75,21 @@ def minmax_Gauss(x_lb, x_ub, mean_lb, mean_ub, cov, wrap_array):
 @partial(jax.jit, static_argnums=(0, 1))
 def minmax_Gauss_per_dim(n, wrap, x_lb_per_dim, x_ub_per_dim, mean_lb, mean_ub, cov, state_space_size):
     '''
+    Compute the min/max integral of a multivariate Gaussian distribution over a given interval, where the mean of the Gaussian lies in [mean_lb, mean_ub].
     Exploit rectangular partition to compute much fewer Gaussian integrals
+
+    :param n: Dimension of the state space.
+    :param wrap: Wrap at the indices where this array is True.
+    :param x_lb_per_dim: Lower bound of the interval per dimension.
+    :param x_ub_per_dim: Upper bound of the interval per dimension.
+    :param mean_lb: Lower bound of the mean of the Gaussian distribution.
+    :param mean_ub: Upper bound of the mean of the Gaussian distribution.
+    :param cov: Covariance of the Gaussian distribution.
+    :param state_space_size: Size of the state space per dimension (i.e., size of the "state space box")
+    :return:
+        - Min/max probabilities.
+        - Lower bound probabilities.
+        - Upper bound probabilities.
     '''
 
     probs = [[] for _ in range(n)]
@@ -99,6 +141,10 @@ def minmax_Gauss_per_dim(n, wrap, x_lb_per_dim, x_ub_per_dim, mean_lb, mean_ub, 
 @partial(jax.jit, static_argnums=(0, 1, 2, 4))
 def interval_distribution_per_dim(n, max_slice, wrap, wrap_array, decimals, number_per_dim, per_dim_lb, per_dim_ub, i_lb, mean_lb, mean_ub, cov, state_space_lb, state_space_ub,
                                   region_idx_array, unsafe_states):
+    '''
+    For a given state-action pair, compute the probability intervals over all successor states.
+    '''
+
     # Extract slices from the partition elements per dimension
     x_lb = [dynslice(per_dim_lb[i], i_lb[i], max_slice[i]) for i in range(n)]
     x_ub = [dynslice(per_dim_ub[i], i_lb[i], max_slice[i]) for i in range(n)]
@@ -145,18 +191,31 @@ def interval_distribution_per_dim(n, max_slice, wrap, wrap_array, decimals, numb
     return prob, prob_idx, prob_id, prob_nonzero, prob_absorbing, keep
 
 
-# vmap to compute distributions for all actions in a state
-vmap_interval_distribution_per_dim = jax.jit(
-    jax.vmap(interval_distribution_per_dim, in_axes=(None, None, None, None, None, None, None, None, 0, 0, 0, None, None, None, None, None), out_axes=(0, 0, 0, 0, 0, 0)),
-    static_argnums=(0, 1, 2, 4))
+def compute_probability_intervals(args, model, partition, frs, max_slice):
+    '''
+    Compute probability intervals for all states and actions of the IMDP.
 
+    :param args: Argument object.
+    :param model: Model object.
+    :param partition: Partition object.
+    :param frs: Forward reachable sets.
+    :param max_slice: Array where each element is the maximum number of partition elements to consider in each dimension.
+    :return:
+        - prob: Probability intervals per state-action pair
+        - prob_id: Successor states associated with these probability intervals per state-action pair
+        - prob_absorbing: Probability interval of reaching the absorbing state per state-action pair
+    '''
 
-def compute_probabilities_per_dim(args, model, partition, frs, max_slice):
     keep = {}
     prob = {}
     prob_id = {}
     prob_nonzero = {}
     prob_absorbing = {}
+
+    # vmap to compute distributions for all actions in a state
+    vmap_interval_distribution_per_dim = jax.jit(
+        jax.vmap(interval_distribution_per_dim, in_axes=(None, None, None, None, None, None, None, None, 0, 0, 0, None, None, None, None, None), out_axes=(0, 0, 0, 0, 0, 0)),
+        static_argnums=(0, 1, 2, 4))
 
     # For all states
     for s, frs_s in tqdm(enumerate(frs.values()), total=len(frs)):
@@ -195,15 +254,4 @@ def compute_probabilities_per_dim(args, model, partition, frs, max_slice):
 
     print('-- Number of times function was compiled:', interval_distribution_per_dim._cache_size())
 
-    return prob, prob_id, prob_nonzero, prob_absorbing, keep
-
-
-@partial(jax.jit, static_argnums=(0))
-def compose(n, prob_low, prob_high, nonzero_id):
-    prob_low_outer = reduce(jnp.multiply.outer, prob_low).flatten()
-    prob_high_outer = reduce(jnp.multiply.outer, prob_high).flatten()
-    prob = jnp.stack([prob_low_outer, prob_high_outer]).T
-
-    idx = jnp.asarray(jnp.meshgrid(*nonzero_id)).T.reshape(-1, n)
-
-    return prob, idx
+    return prob, prob_id, prob_absorbing

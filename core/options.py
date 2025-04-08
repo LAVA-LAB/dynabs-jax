@@ -2,14 +2,11 @@ import argparse
 
 
 def parse_arguments():
-    """
+    '''
     Function to parse arguments provided
 
-    Returns
-    -------
-    :args: Object with all arguments
-
-    """
+    :return: Object with all arguments
+    '''
 
     # Options
     parser = argparse.ArgumentParser(prefix_chars='--')
@@ -22,11 +19,6 @@ def parse_arguments():
 
     parser.add_argument('--gpu', action=argparse.BooleanOptionalAction, default=False,
                         help="If true, run on GPU. Otherwise, run on CPU")
-
-    parser.add_argument('--num_samples', type=int, default=1000,
-                        help="Number of samples to compute probability intervals for")
-    parser.add_argument('--confidence', type=float, default=0.01,
-                        help="Confidence level on each individual transition probability")
 
     parser.add_argument('--model', type=str, default='Drone2D',
                         help="Benchmark model to run")

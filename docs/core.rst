@@ -1,8 +1,13 @@
-core package
+core
 ============
 
-Submodules
-----------
+core.Gaussian\_probabilities module
+-----------------------------------
+
+.. automodule:: core.Gaussian_probabilities
+   :members:
+   :show-inheritance:
+   :undoc-members:
 
 core.actions\_forward module
 ----------------------------
@@ -52,10 +57,10 @@ core.polytope module
    :show-inheritance:
    :undoc-members:
 
-core.prob\_Gauss module
------------------------
+core.setmath module
+-------------------
 
-.. automodule:: core.prob_Gauss
+.. automodule:: core.setmath
    :members:
    :show-inheritance:
    :undoc-members:
@@ -72,14 +77,6 @@ core.utils module
 -----------------
 
 .. automodule:: core.utils
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-Module contents
----------------
-
-.. automodule:: core
    :members:
    :show-inheritance:
    :undoc-members:

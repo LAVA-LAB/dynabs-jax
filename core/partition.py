@@ -12,12 +12,12 @@ EPS = 1e-3
 @jax.jit
 def meshgrid_jax(points, size):
     '''
-        Set rectangular grid
+    Set rectangular grid.
 
-        :param low: ndarray
-        :param high: ndarray
-        :param size: List of ints (entries per dimension)
-        '''
+    :param points: Center points per dimension (list or arrays).
+    :param size: Number of cells per dimension (list of ints).
+    :return: Grid as 2D array.
+    '''
 
     meshgrid = jnp.asarray(jnp.meshgrid(*points))
     grid = jnp.reshape(meshgrid, (len(size), -1)).T
@@ -26,6 +26,14 @@ def meshgrid_jax(points, size):
 
 
 def define_grid_jax(low, high, size):
+    '''
+    Define a grid of the specified size, covering the box [low,high].
+
+    :param low: Lower bound of the box to cover (array).
+    :param high: Upper bound of the box to cover (array).
+    :param size: Number of cells per dimension (list of ints).
+    :return:
+    '''
     points = [np.linspace(low[i], high[i], size[i]) for i in range(len(size))]
     grid = meshgrid_jax(points, size)
 
@@ -34,7 +42,13 @@ def define_grid_jax(low, high, size):
 
 @jax.jit
 def center2halfspace(center, cell_width):
-    ''' From given centers and cell widths, compute the halfspace inequalities Ax <= b. '''
+    '''
+    From given centers and cell widths, compute the halfspace inequalities Ax <= b.
+
+    :param center:
+    :param cell_width:
+    :return:
+    '''
 
     A1 = jnp.identity(len(center))
     A2 = -jnp.identity(len(center))
@@ -86,6 +100,13 @@ def get_vertices_from_bounds(lb, ub):
 
 
 class RectangularPartition(object):
+    """
+    Represents a rectangular partitioning of a state space into hyperrectangular regions.
+
+    This class is used to define and manage a partition of a state space, where the space is divided
+    into hyperrectangular regions (or cells). Each cell is defined by its center, bounds, and vertices,
+    and the entirety of these regions form a structured grid within the state space.
+    """
 
     def __init__(self, model):
         print('Define rectangular partition...')
@@ -113,11 +134,10 @@ class RectangularPartition(object):
         ub_unit = jnp.array(self.number_per_dim - 1, dtype=int)
         centers_unit = define_grid_jax(lb_unit, ub_unit, self.number_per_dim)
 
-        # TODO: Remove this
+        # TODO: Check how to avoid this step
         from .utils import lexsort4d
         centers_unit = lexsort4d(centers_unit)
 
-        # TODO: Check how to avoid this step
         # Define n-dimensional array (n = dimension of state space) to index elements of the partition
         centers = jnp.array(centers_unit, dtype=int)
         self.region_idx_array = np.zeros(self.number_per_dim, dtype=int)
@@ -229,6 +249,12 @@ class RectangularPartition(object):
         return
 
     def x2state(self, x):
+        '''
+        Return the state ID for a given point x in the continuous state space.
+
+        :param x: Point in the continuous state space.
+        :return: State ID.
+        '''
         # Discard samples outside of partition
         in_partition = np.all((x >= self.boundary_lb) * (x <= self.boundary_ub))
 

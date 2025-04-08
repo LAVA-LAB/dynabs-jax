@@ -10,6 +10,25 @@ from tqdm import tqdm
 
 @partial(jax.jit, static_argnums=(0))
 def forward_reach(step_set, state_min, state_max, input, cov_diag, number_per_dim, cell_width, boundary_lb, boundary_ub):
+    """
+    Computes the forward reachable set given a set of input parameters.
+
+    :param step_set: Function that computes the minimum and maximum reachable states given the state bounds and input.
+    :param state_min: Lower bound of the box (of states ) to propagate.
+    :param state_max: Upper bound of the box (of states ) to propagate.
+    :param input: Control input for the dynamical system.
+    :param cov_diag: Diagonal entries of the covariance matrix
+    :param number_per_dim: The number of cells per dimension in the state space grid.
+    :param cell_width: The width of cells along each dimension.
+    :param boundary_lb: The lower bound of the grid of the state space.
+    :param boundary_ub: The upper bound of the grid of the state space.
+    :return: A tuple containing:
+        - frs_min: The minimum bound of the forward reachable set.
+        - frs_max: The maximum bound of the forward reachable set.
+        - frs_span: The number of grid cells encompassed by the forward reachable set.
+        - idx_low: The lower index bounds in the grid corresponding to the forward reachable set.
+        - idx_upp: The upper index bounds in the grid corresponding to the forward reachable set.
+    """
     frs_min, frs_max = step_set(state_min, state_max, input, input)
 
     # If covariance is zero, then the span equals the number of cells the forward reachable set contains at most

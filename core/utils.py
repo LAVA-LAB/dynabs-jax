@@ -4,9 +4,10 @@ import numpy as np
 def create_batches(data_length, batch_size):
     '''
     Create batches for the given data and batch size. Returns the start and end indices to iterate over.
-    :param data:
-    :param batch_size:
-    :return:
+
+    :param data_length: Total number of data points.
+    :param batch_size: Number of points per batch.
+    :return: Each batch is represented by the slice [starts[i]:ends[i]].
     '''
 
     num_batches = np.ceil(data_length / batch_size).astype(int)
@@ -27,29 +28,6 @@ def lexsort4d(array):
     return array[idxs]
 
 
-def writeFile(file, operation="w", content=[""]):
-    '''
-    Create a filehandle and store content in it.
-
-    Parameters
-    ----------
-    file : str
-        Filename to store the content in.
-    operation : str, optional
-        Type of operation to perform on the file. The default is "w".
-    content : list, optional
-        List of strings to store in the file. The default is [""].
-
-    Returns
-    -------
-    None.
-
-    '''
-    filehandle = open(file, operation)
-    filehandle.writelines(content)
-    filehandle.close()
-
-
 def cm2inch(*tupl):
     '''
     Convert centimeters to inches
@@ -63,6 +41,12 @@ def cm2inch(*tupl):
 
 
 def remove_consecutive_duplicates(trace):
+    '''
+    Remove consecutive duplicates from a given trace.
+
+    :param trace:
+    :return: Trace without duplicates
+    '''
     done = False
     i = 0
     while not done:

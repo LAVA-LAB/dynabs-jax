@@ -4,25 +4,10 @@ from tqdm import tqdm
 
 class MonteCarloSim():
     '''
-    Class to run Monte Carlo simulations under a derived controller
+    Class to run Monte Carlo simulations on the discrete-time stochastic system closed under a fixed Markov policy.
     '''
 
     def __init__(self, model, partition, policy, policy_inputs, x0, iterations=100, sim_horizon=1000, random_initial_state=False, verbose=True, **kwargs):
-        '''
-        Initialization function
-
-        Parameters
-        ----------
-        Ab : abstraction instance
-            Full object of the abstraction being plotted for
-        iterations : int, optional
-            Number of Monte Carlo iterations. The default is 100.
-
-        Returns
-        -------
-        None.
-
-        '''
 
         print('Starting Monte Carlo simulations...')
 
@@ -38,7 +23,7 @@ class MonteCarloSim():
         self.random_initial_state = random_initial_state
 
         # Predefine noise to speed up computations
-        self.defineDisturbances()
+        self.define_noise_values()
 
         self.results = {
             'satprob': -1,
@@ -52,7 +37,10 @@ class MonteCarloSim():
 
         self.results['satprob'] = np.mean(self.results['goal_reached'])
 
-    def defineDisturbances(self):
+    def define_noise_values(self):
+        '''
+        Predefine the noise values to speed up computations.
+        '''
 
         # Gaussian noise mode
         self.noise = np.random.multivariate_normal(
@@ -60,6 +48,15 @@ class MonteCarloSim():
             (self.iterations, self.horizon))
 
     def _runIteration(self, x0, m):
+        '''
+        Run a Monte Carlo simulation from x0.
+
+        :param x0: Initial continuous state.
+        :param m: Simulation number.
+        :return:
+            - trace: Dictionary containing the state and input at each time step.
+            - success: Boolean indicating whether goal was reached.
+        '''
 
         # Initialize variables at start of iteration
         success = False

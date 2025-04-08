@@ -1,20 +1,29 @@
 import logging
 
 import numpy as np
-import pandas as pd
+import stormpy
 from tqdm import tqdm
-
-from .utils import writeFile
 
 
 class BuilderStorm:
     """
-    Construct iMDP
+    Class to construct the IMDP abstraction and compute an optimal Markov policy using Storm.
     """
 
-    def __init__(self, args, partition, actions, states, x0, goal_regions, critical_regions, P_full, P_id, P_absorbing):
+    def __init__(self, partition, actions, states, x0, goal_regions, critical_regions, P_full, P_id, P_absorbing):
+        '''
+        Generate the IMDP abstraction
 
-        import stormpy
+        :param partition:
+        :param actions:
+        :param states:
+        :param x0:
+        :param goal_regions:
+        :param critical_regions:
+        :param P_full:
+        :param P_id:
+        :param P_absorbing:
+        '''
 
         self.builder = stormpy.IntervalSparseMatrixBuilder(rows=0, columns=0, entries=0, force_dimensions=False,
                                                            has_custom_row_grouping=True, row_groups=0)
@@ -35,12 +44,10 @@ class BuilderStorm:
 
         P_stacked = np.vstack((P_full_flat, P_absorbing_flat))
 
-        # t = time.time()
         P_unique = np.unique(P_stacked, axis=0)
-        # print(f'- Numpy took {(time.time() - t):.3f} sec.')
-        # t = time.time()
+
+        # Experimental: Determining the unique elements is much faster with Pandas, but sometimes leads to rounding errors.
         # P_unique = np.round(np.sort(pd.DataFrame(P_stacked).drop_duplicates(), axis=0), args.decimals)
-        # print(f'- Pandas took {(time.time() - t):.3f} sec.')
         # assert np.all(P_unique2 == P_unique)
 
         print('-- Unique probability intervals determined')
@@ -72,7 +79,8 @@ class BuilderStorm:
         row = 0
         states_created = 0
 
-        # Total number of choices = sum of choices in all states (always >=1), and always a single choice in a goal/critical state. Add one for the absorbing state.
+        # Total number of choices = sum of choices in all states (always >=1), and always a single choice in a goal/critical state.
+        # Add one for the absorbing state.
         total_choices = np.sum([max(1, len(p.keys())) if s not in goal_regions and s not in critical_regions else 1 for s, p in P_id.items()]) + 1
         choice_labeling = stormpy.storage.ChoiceLabeling(total_choices)
         choice_labels = {str(i) for i in range(-1, len(actions.inputs))}
@@ -111,20 +119,6 @@ class BuilderStorm:
                     if a in self.intervals_absorbing[s]:
                         self.builder.add_next_value(row, self.absorbing_state, self.intervals_absorbing[s][a])
 
-                    # for ss in self.successor_states[a]:
-                    #     self.builder.add_next_value(row, ss, self.intervals[tuple(P_full[a, ss])])
-
-                    # # Add transitions to absorbing state
-                    # self.builder.add_next_value(row, self.absorbing_state, self.intervals[tuple(P_absorbing[a])])
-
-                    # # Add transitions for current (s,a) pair to other normal states
-                    # for ss, intv in self.intervals[a].items():
-                    #     self.builder.add_next_value(row, ss, intv)
-                    #
-                    # # Add transitions to other states
-                    # self.builder.add_next_value(row, self.absorbing_state, self.intervals_absorbing[a])
-
-                    # For each (s,a) pair, increment the row count by one
                     row += 1
 
         for s in [self.absorbing_state]:
@@ -166,8 +160,11 @@ class BuilderStorm:
         self.imdp = stormpy.storage.SparseIntervalMdp(components)
 
     def compute_reach_avoid(self, maximizing=True):
+        '''
+        Compute a Markov policy that maximizes the probability of satisfying the reach-avoid property
 
-        import stormpy
+        :param maximizing: If True, maximise the reachability; Otherwise, minimise.
+        '''
 
         prop = stormpy.parse_properties('P{}=? [F "goal"]'.format('max' if maximizing else 'min'))[0]
         env = stormpy.Environment()
@@ -183,6 +180,11 @@ class BuilderStorm:
         return
 
     def get_policy(self, actions):
+        '''
+        Extract optimal policy from the IMDP object
+
+        :param actions: Object with Action info.
+        '''
 
         assert self.result_generator.has_scheduler
         scheduler = self.result_generator.scheduler
@@ -194,14 +196,18 @@ class BuilderStorm:
             action = state.actions[action_index]
 
             action_label = int(list(action.labels)[0])
-            # print('state:', state,' - ', action,' - ', action.labels, ' - ', action_label)
-
             policy[int(state)] = action_label
             policy_inputs[int(state)] = actions.inputs[action_label]
 
         return policy, policy_inputs
 
     def get_label(self, s):
+        '''
+        Get label for given state.
+
+        :param s: State to get label for.
+        :return: Label.
+        '''
 
         label = ''
         if 'goal' in self.imdp.states[s].labels:
@@ -214,6 +220,14 @@ class BuilderStorm:
         return label
 
     def print_transitions(self, state, action, actions, partition):
+        '''
+        Print the transitions for the given state.
+
+        :param state: State to print transitions for.
+        :param action: Action to print transitions for.
+        :param actions: Object with action info.
+        :param partition: Object with partition info.
+        '''
 
         if type(state) in [list, tuple]:
             state = int(partition.region_idx_array[tuple(state)])
@@ -248,171 +262,13 @@ class BuilderStorm:
         print('----------')
 
     def get_value_from_tuple(self, x, partition):
+        '''
+        Get the reach-avoid probability for a given state
+
+        :param x: State to return reach-avoid probability for.
+        :param partition: Object with partition info.
+        :return: Value in the given state.
+        '''
+
         s = partition.x2state(x)
-        # s = region_idx_inv[tuple(x)]
         return self.results[s]
-
-
-class BuilderPrism:
-    """
-    Construct iMDP
-    """
-
-    def __init__(self, state_dependent, states, goal_regions, critical_regions, actions, enabled_actions, P_full, P_absorbing):
-
-        self.out_dir = 'output/'
-        self.export_name = 'model'
-        self.out_path = str(self.out_dir + self.export_name)
-        self.PRISM_allfile = str(self.out_path + '.all')
-
-        # Set some constants
-        self.absorbing_state = np.max(states) + 1
-
-        print('- Writing PRISM states file')
-
-        ### Write states file
-        PRISM_statefile = str(self.out_path + ".sta")
-
-        # Define tuple of state variables (for header in PRISM state file)
-        state_var_string = ['(s)']
-        state_file_content = [f'{str(i)}:({str(i)})' for i in states] + \
-                             [f'{str(self.absorbing_state)}:({str(self.absorbing_state)})']
-        state_file_string = '\n'.join(state_var_string + state_file_content)
-
-        # Write content to file
-        writeFile(PRISM_statefile, 'w', state_file_string)
-
-        print('- Writing PRISM label file')
-
-        ### Write label file
-        PRISM_labelfile = str(self.out_path + ".lab")
-
-        label_head = ['0="init" 1="deadlock" 2="reached" 3="critical"']
-        label_body = ['' for i in states]
-        for i in states:
-            substring = str(i) + ': 0'
-
-            # Check if region is a deadlock state
-            if len(enabled_actions[i]) == 0:
-                substring += ' 1'
-
-            # Check if region is in goal set
-            if i in goal_regions:
-                substring += ' 2'
-            elif i in critical_regions:
-                substring += ' 3'
-
-            label_body[i] = substring
-
-        label_body += [f'{str(self.absorbing_state)}: 1 3']
-        label_full = '\n'.join(label_head) + '\n' + '\n'.join(label_body)
-
-        # Write content to file
-        writeFile(PRISM_labelfile, 'w', label_full)
-
-        print('- Writing PRISM transition file')
-
-        ### Write transition file
-        PRISM_transitionfile = str(self.out_path + ".tra")
-
-        transition_file_list = ['' for i in states]
-        states_created = 0
-        nr_choices_absolute = 0
-        nr_transitions_absolute = 0
-
-        # For every state
-        for s in tqdm(states):
-            states_created += 1
-            choice = 0
-            enabled_in_s = np.where(enabled_actions[s])[0]
-
-            if state_dependent:
-                Pf = P_full[s]
-                Pa = P_absorbing[s]
-            else:
-                Pf = P_full
-                Pa = P_absorbing
-
-            # If no actions are enabled at all, add a deterministic transition to the absorbing state
-            if len(enabled_in_s) == 0 or s in critical_regions or s in goal_regions:
-
-                selfloop_prob = '[1.0,1.0]'
-                substring = [f'{s} {choice} {self.absorbing_state} {selfloop_prob}']
-
-                nr_choices_absolute += 1
-                nr_transitions_absolute += 1
-
-            else:
-
-                substring = ['' for i in range(len(enabled_in_s))]
-
-                # For every enabled action
-                for a_idx, a in enumerate(enabled_in_s):
-                    # Define name of action
-                    actionLabel = "a_" + str(a)
-
-                    # Absorbing state transition
-                    str_main = [f'{s} {choice} {ss} [{Pf[a, ss, 0]},{Pf[a, ss, 1]}] {actionLabel}'
-                                for ss in states if Pf[a, ss, 1] > 0]
-
-                    if Pa[a, 1] > 0:
-                        str_abs = [
-                            f'{s} {choice} {self.absorbing_state} [{Pa[a, 0]},{Pa[a, 1]}] {actionLabel}']
-                    else:
-                        str_abs = []
-
-                    # Increase choice counter
-                    choice += 1
-                    nr_choices_absolute += 1
-                    nr_transitions_absolute += len(str_main) + len(str_abs)
-
-                    # Join strings
-                    substring[a_idx] = '\n'.join(str_main + str_abs)
-
-            transition_file_list[s] = substring
-
-        # Add one choice and transition in the absorbing state
-        transition_file_list += [[f'{self.absorbing_state} 0 {self.absorbing_state} [1,1] loop']]
-        states_created += 1
-        nr_choices_absolute += 1
-        nr_transitions_absolute += 1
-
-        flatten = lambda t: [item for sublist in t
-                             for item in sublist]
-        transition_file_list = '\n'.join(flatten(transition_file_list))
-
-        # Header contains nr of states, choices, and transitions
-        header = str(states_created) + ' ' + str(nr_choices_absolute) + ' ' + str(nr_transitions_absolute) + '\n'
-
-        print('iMDP statistics:')
-        print('- # states:', states_created)
-        print('- # choices:', nr_choices_absolute)
-        print('- # transitions:', nr_transitions_absolute)
-
-        # Write content to file
-        writeFile(PRISM_transitionfile, 'w', header + transition_file_list)
-
-        ### Write specification file
-        self.specification = 'Pmaxmin=? [F "reached" ]'
-        specfile = str(self.out_path + ".pctl")
-
-        # Write specification file
-        writeFile(specfile, 'w', self.specification)
-
-        self.nr_states = states_created
-
-    def compute_reach_avoid(self, prism_folder, maximizing=True):
-
-        import subprocess  # Import to call prism via terminal command
-
-        policy_file = str(self.out_dir + 'policy.txt')
-        vector_file = str(self.out_dir + 'vector.csv')
-
-        options = ' -exportstrat "' + policy_file + '"' + \
-                  ' -exportvector "' + vector_file + '"'
-
-        command = f"{prism_folder} -javamaxmem 2g -importmodel '{self.PRISM_allfile}' -pf '{self.specification}' {options}"
-        subprocess.Popen(command, shell=True).wait()
-
-        values = pd.read_csv(vector_file, header=None).iloc[:self.nr_states].to_numpy()
-        self.results = values.flatten()
