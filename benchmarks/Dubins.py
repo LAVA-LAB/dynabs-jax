@@ -4,7 +4,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from core.dynamics import setmath
+from core import setmath
 
 
 def wrap_theta(theta):
@@ -12,18 +12,23 @@ def wrap_theta(theta):
 
 
 class Dubins(object):
+    '''
+    Dubin's vehicle benchmark, with a 4D state space and a 2D control input space.
+    '''
 
     def __init__(self, args):
-        '''
-        Defines the 2D drone benchmark, with a 4D LTI system
-        '''
-
         self.linear = False
         self.set_model(args)
         self.set_spec()
         print('')
 
     def set_model(self, args):
+        '''
+        Set model parameters.
+
+        :param args: Arguments object.
+        '''
+
         # Set value of delta (how many time steps are grouped together)
         # Used to make the model fully actuated
         self.lump = 1
@@ -75,20 +80,15 @@ class Dubins(object):
 
         return
 
-    # @jax.jit
-    # def step_no_noise(self, state, action):
-    #
-    #     [x, y, theta, V] = state
-    #     [u1, u2] = action
-    #     x_next = x + self.tau * V * self.cosFunc(theta)
-    #     y_next = y + self.tau * V * self.sinFunc(theta)
-    #     theta_next = theta + self.tau * self.alpha * u1
-    #     V_next = self.beta * V + self.tau * u2
-    #
-    #     state_next = jnp.array([x_next, y_next, theta_next, V_next])
-    #     return state_next
-
     def step(self, state, action, noise):
+        '''
+        Make a step under the dynamics.
+
+        :param state: Current state.
+        :param action: Control input that is executed.
+        :param noise: Realization of the stochastic process noise.
+        :return: Next state.
+        '''
 
         [x, y, theta, V] = state
         [u1, u2] = action
@@ -105,6 +105,15 @@ class Dubins(object):
 
     @partial(jax.jit, static_argnums=(0))
     def step_set(self, state_min, state_max, action_min, action_max):
+        '''
+        Compute the forward reachable set for the box of states [state_min, state_max] under the control input [action_min, action_max].
+
+        :param state_min: Lower bound state.
+        :param state_max: Upper bound state.
+        :param action_min: Lower bound control input.
+        :param action_max: Upper bound control input.
+        :return: Forward reachable set represented as a box.
+        '''
 
         # Convert to boxes
         state_min, state_max = setmath.box(jnp.array(state_min), jnp.array(state_max))
@@ -132,90 +141,36 @@ class Dubins(object):
         return state_next_min, state_next_max
 
     def set_spec(self):
+        '''
+        Set the abstraction parameters and the reach-avoid specification.
+        '''
+
         self.partition = {}
         self.targets = {}
 
-        layout = 3
+        # Authority limit for the control u, both positive and negative
+        self.uMin = [-0.5 * np.pi, -5]
+        self.uMax = [0.5 * np.pi, 5]
+        self.num_actions = [7, 7]
 
-        if layout == 1:
+        self.partition['boundary'] = np.array([[-10, 0, -np.pi, -3], [10, 10, np.pi, 3]])
+        self.partition['boundary_jnp'] = jnp.array(self.partition['boundary'])
+        self.partition['number_per_dim'] = np.array([40, 20, 20, 20])
 
-            # Authority limit for the control u, both positive and negative
-            self.uMin = [-0.5 * np.pi, -5]
-            self.uMax = [0.5 * np.pi, 5]
-            self.num_actions = [6, 6]
+        self.goal = np.array([
+            [[6, 6, -np.pi, -3], [9, 9, np.pi, 3]]
+        ], dtype=float)
 
-            self.partition['boundary'] = np.array([[0, 0, -np.pi, -5], [10, 10, np.pi, 5]])
-            self.partition['boundary_jnp'] = jnp.array(self.partition['boundary'])
-            self.partition['number_per_dim'] = np.array([20, 20, 20, 20])
+        self.critical = np.array([
+            # [[-10, -10, -np.pi, -3], [-9, -9, np.pi, 3]],
+            [[4, 5, -2 * np.pi, -3], [5, 10, 2 * np.pi, 3]],
+            # [[4, 4, -2 * np.pi, -3], [6, 5, 2 * np.pi, 3]],
+            [[-1, 0, -2 * np.pi, -3], [0, 5, 2 * np.pi, 3]],
+            [[-5, 4, -2 * np.pi, -3], [-1, 5, 2 * np.pi, 3]],
+            # [[-10, 8, -2 * np.pi, -3], [-8, 10, 2 * np.pi, 3]],
+            # [[-3, 5, -2 * np.pi, -3], [-2, 7, 2 * np.pi, 3]],
+        ], dtype=float)
 
-            self.goal = np.array([
-                [[6, 6, -2 * np.pi, -10], [9, 9, 2 * np.pi, 10]]
-            ], dtype=float)
-
-            self.critical = np.array([
-                [[-5, 0, -2 * np.pi, -10], [-4, 5, 2 * np.pi, 10]],
-                [[4, 5, -2 * np.pi, -10], [5, 10, 2 * np.pi, 10]],
-                # [[-1, 5, -np.pi, -5], [1, 10, np.pi, 5]],
-            ], dtype=float)
-
-            self.x0 = np.array([2, 8, 0, 0])
-
-        elif layout == 2:
-
-            # Authority limit for the control u, both positive and negative
-            self.uMin = [-0.5 * np.pi, -5]
-            self.uMax = [0.5 * np.pi, 5]
-            self.num_actions = [7, 7]
-
-            self.partition['boundary'] = np.array([[0, 0, -np.pi, -3], [10, 10, np.pi, 3]])
-            self.partition['boundary_jnp'] = jnp.array(self.partition['boundary'])
-            self.partition['number_per_dim'] = np.array([20, 20, 20, 20])
-
-            self.goal = np.array([
-                [[5, 5, -np.pi, -3], [10, 10, np.pi, 3]]
-            ], dtype=float)
-
-            self.critical = np.array([
-                [[-10, -10, -np.pi, -3], [-9, -9, np.pi, 3]],
-            ], dtype=float)
-
-            self.x0 = np.array([2, 8, 0, 0])
-
-        else:
-
-            # Authority limit for the control u, both positive and negative
-            self.uMin = [-0.5 * np.pi, -5]
-            self.uMax = [0.5 * np.pi, 5]
-            self.num_actions = [7, 7]
-
-            self.partition['boundary'] = np.array([[-10, 0, -np.pi, -3], [10, 10, np.pi, 3]])
-            self.partition['boundary_jnp'] = jnp.array(self.partition['boundary'])
-            self.partition['number_per_dim'] = np.array([40, 20, 20, 20])
-
-            self.goal = np.array([
-                [[6, 6, -np.pi, -3], [9, 9, np.pi, 3]]
-            ], dtype=float)
-
-            # self.critical = np.array([
-            #     # [[-10, -10, -np.pi, -3], [-9, -9, np.pi, 3]],
-            #     [[4, 5, -2 * np.pi, -3], [5, 10, 2 * np.pi, 3]],
-            #     # [[4, 4, -2 * np.pi, -3], [6, 5, 2 * np.pi, 3]],
-            #     [[-1, 0, -2 * np.pi, -3], [0, 5, 2 * np.pi, 3]],
-            #     [[-6, 4, -2 * np.pi, -3], [-1, 5, 2 * np.pi, 3]],
-            #     [[-10, 8, -2 * np.pi, -3], [-8, 10, 2 * np.pi, 3]],
-            #     [[-3, 5, -2 * np.pi, -3], [-2, 6, 2 * np.pi, 3]],
-            # ], dtype=float)
-
-            self.critical = np.array([
-                # [[-10, -10, -np.pi, -3], [-9, -9, np.pi, 3]],
-                [[4, 5, -2 * np.pi, -3], [5, 10, 2 * np.pi, 3]],
-                # [[4, 4, -2 * np.pi, -3], [6, 5, 2 * np.pi, 3]],
-                [[-1, 0, -2 * np.pi, -3], [0, 5, 2 * np.pi, 3]],
-                [[-5, 4, -2 * np.pi, -3], [-1, 5, 2 * np.pi, 3]],
-                # [[-10, 8, -2 * np.pi, -3], [-8, 10, 2 * np.pi, 3]],
-                # [[-3, 5, -2 * np.pi, -3], [-2, 7, 2 * np.pi, 3]],
-            ], dtype=float)
-
-            self.x0 = np.array([-2.5, 2.5, 0, 0])
+        self.x0 = np.array([-2.5, 2.5, 0, 0])
 
         return

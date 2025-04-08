@@ -1,5 +1,7 @@
 # Installation
 
+The code can be installed by following the instructions below.
+
 ### 1. Create Python environment
 
 The first step is to create the Python environment. We tested the code on Python 3.12.
@@ -77,3 +79,5 @@ A smaller version of the Dubin's benchmark is also available (this can be useful
 ```
 python RunFile.py --model Dubins_small
 ```
+
+Created figures will be stored in the `output/` folder. The runtimes and model sizes can be read from the terminal output.

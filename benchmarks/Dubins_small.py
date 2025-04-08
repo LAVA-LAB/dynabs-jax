@@ -4,7 +4,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from core.dynamics import setmath
+from core import setmath
 
 
 def wrap_theta(theta):
@@ -12,18 +12,23 @@ def wrap_theta(theta):
 
 
 class Dubins_small(object):
+    '''
+    Simplified version of the Dubin's vehicle benchmark, with a 3D state space and a 2D control input space.
+    '''
 
     def __init__(self, args):
-        '''
-        Defines the 2D drone benchmark, with a 4D LTI system
-        '''
-
         self.linear = False
         self.set_model(args)
         self.set_spec()
         print('')
 
     def set_model(self, args):
+        '''
+        Set model parameters.
+
+        :param args: Arguments object.
+        '''
+
         # Set value of delta (how many time steps are grouped together)
         # Used to make the model fully actuated
         self.lump = 1
@@ -51,19 +56,16 @@ class Dubins_small(object):
 
         return
 
-    # @jax.jit
-    # def step_no_noise(self, state, action):
-    #
-    #     [x, y, theta] = state
-    #     [u1, u2] = action
-    #     x_next = x + self.tau * u2 * jnp.cos(theta)
-    #     y_next = y + self.tau * u2 * jnp.sin(theta)
-    #     theta_next = theta + self.tau * self.alpha * u1
-    #
-    #     state_next = jnp.array([x_next, y_next, theta_next])
-    #     return state_next
-
     def step(self, state, action, noise):
+        '''
+        Make a step under the dynamics.
+
+        :param state: Current state.
+        :param action: Control input that is executed.
+        :param noise: Realization of the stochastic process noise.
+        :return: Next state.
+        '''
+
         [x, y, theta] = state
         [u1, u2] = action
         x_next = x + self.tau * u2 * np.cos(theta)
@@ -75,6 +77,16 @@ class Dubins_small(object):
 
     @partial(jax.jit, static_argnums=(0))
     def step_set(self, state_min, state_max, action_min, action_max):
+        '''
+        Compute the forward reachable set for the box of states [state_min, state_max] under the control input [action_min, action_max].
+
+        :param state_min: Lower bound state.
+        :param state_max: Upper bound state.
+        :param action_min: Lower bound control input.
+        :param action_max: Upper bound control input.
+        :return: Forward reachable set represented as a box.
+        '''
+
         # Convert to boxes
         state_min, state_max = setmath.box(jnp.array(state_min), jnp.array(state_max))
         [x_min, y_min, theta_min] = state_min
@@ -98,6 +110,10 @@ class Dubins_small(object):
         return state_next_min, state_next_max
 
     def set_spec(self):
+        '''
+        Set the abstraction parameters and the reach-avoid specification.
+        '''
+
         self.partition = {}
         self.targets = {}
 

@@ -1,7 +1,10 @@
 # List of used packages
 wheel
 setuptools
-cvxpy
+sphinx==8.2.3
+sphinx-rtd-theme==3.0.2
+sphinx_mdinclude==0.6.2
+myst-parser==4.0.1
 imageio==2.9.0
 matplotlib==3.10.1
 numpy==2.2.4
