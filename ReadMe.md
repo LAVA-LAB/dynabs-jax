@@ -10,7 +10,7 @@ We recommend using (mini)conda for setting up an environment. To create and acti
 
 ```
 conda create -n dynabs-jax python=3.12
-conda activate dynabs
+conda activate dynabs-jax
 ```
 
 Install cddlib and GMP by [following the (OS-dependent) instructions here](https://pycddlib.readthedocs.io/en/latest/quickstart.html). For example, on MacOS, you can run:
