@@ -85,7 +85,7 @@ if __name__ == '__main__':
 
     print(f"(Number of actions in each state: {np.sum(np.any(enabled_actions, axis=0))})\n")
 
-    P_full, P_id, _, P_absorbing, _ = compute_probability_intervals(args, model, partition, actions.frs, actions.max_slice)
+    P_full, P_id, P_absorbing = compute_probability_intervals(args, model, partition, actions.frs, actions.max_slice)
 
     # %% Model checking
 
@@ -95,8 +95,7 @@ if __name__ == '__main__':
     print('\nCreate iMDP using storm...')
 
     # Build interval MDP via StormPy
-    builderS = BuilderStorm(args=args,
-                            partition=partition,
+    builderS = BuilderStorm(partition=partition,
                             actions=actions,
                             states=np.array(partition.regions['idxs']),
                             x0=model.x0,
