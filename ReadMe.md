@@ -60,7 +60,7 @@ Install the following
 
 1. Install Storm 1.9.0 (Make sure to install the required dependencies first: https://www.stormchecker.org/documentation/obtain-storm/build.html).
 2. Install Pycarl 2.3.0 within the conda environment (https://moves-rwth.github.io/pycarl/)
-3. Install Pycarl 2.3.0 within the conda environment (https://www.stormchecker.org/documentation/obtain-storm/build.html).
+3. Install Stormpy 2.3.0 within the conda environment (https://moves-rwth.github.io/stormpy/).
 
 # Reproducing experiments
 
