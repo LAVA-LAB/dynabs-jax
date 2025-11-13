@@ -189,7 +189,7 @@ class RectangularPartition(object):
         }
 
         t = time.time()
-        if len(critical_regions) > 0:
+        if len(goal_regions) > 0:
             # Compute halfspace representation of the goal regions
             goal_centers = np.zeros((len(goal_regions), len(self.number_per_dim)))
             goal_widths = np.zeros((len(goal_regions), len(self.number_per_dim)))

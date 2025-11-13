@@ -14,6 +14,34 @@ def box(x_min, x_max):
     # Check if x_min < x_max and if not, flip around.
     return jnp.minimum(x_min, x_max), jnp.maximum(x_min, x_max)
 
+@jax.jit
+def tuple2box(values):
+    '''
+    Compute the min and max of a set of values.
+
+    :param values:
+    :return: min and max of the values.
+    '''
+    return jnp.array([jnp.minimum(values[0], values[1]), jnp.maximum(values[0], values[1])])
+
+
+@jax.jit
+def box2vertices(x_min, x_max):
+    '''
+    Convert box [x_min, x_max] in R^n to its 2^n vertices and return in an array of shape (2^n,n).
+    :param x_min:
+    :param x_max:
+    :return: Vertices of the box.
+    '''
+    
+    x_min, x_max = box(x_min, x_max)
+    n = x_min.shape[0]
+    num = 1 << n
+    idx = jnp.arange(num, dtype=jnp.uint32)
+    shifts = jnp.arange(n, dtype=jnp.uint32)
+    mask = ((idx[:, None] >> shifts[None, :]) & jnp.uint32(1)).astype(bool)
+    return jnp.where(mask, x_max, x_min)
+
 
 @jax.jit
 def mult(X, Y):

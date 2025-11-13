@@ -55,18 +55,24 @@ def plot_grid(ax, state_min, state_max, size=[1,1]):
     ax.vlines(X, ymin=state_min[1] - 1, ymax=state_max[1] + 1, color='gray', linewidth=0.5)
 
 
-def set_plot_lims(ax, state_min, state_max, width):
+def set_plot_ticks(ax, state_min, state_max, width):
 
-    major_ticks_x = np.arange(state_min[0] + 1, state_max[0] + 1, 4 * width[1])
-    major_ticks_y = np.arange(state_min[1] + 1, state_max[1] + 1, 4 * width[0])
+    regions = np.round((state_max - state_min) / width)
 
-    minor_ticks_x = np.arange(state_min[0], state_max[0] + 1, width[0])
-    minor_ticks_y = np.arange(state_min[1], state_max[1] + 1, width[1])
+    # Plot at most x ticks per axis, but at least skip every 4 regions
+    skip_x = max(1, regions[0] // 5, 4)
+    skip_y = max(1, regions[1] // 10, 4)
+
+    major_ticks_x = np.arange(state_min[0] + 0.5 * width[0], state_max[0] - 0.5 * width[0], skip_x * width[0])
+    major_ticks_y = np.arange(state_min[1] + 0.5 * width[1], state_max[1] - 0.5 * width[1], skip_y * width[1])
+
+    # minor_ticks_x = np.arange(state_min[0] + 0.5 * width[0], state_max[0] - 0.5 * width[0], width[0])
+    # minor_ticks_y = np.arange(state_min[1] + 0.5 * width[1], state_max[1] - 0.5 * width[1], width[1])
 
     ax.set_xticks(major_ticks_x)
     ax.set_yticks(major_ticks_y)
-    ax.set_xticks(minor_ticks_x, minor=True)
-    ax.set_yticks(minor_ticks_y, minor=True)
+    # ax.set_xticks(minor_ticks_x, minor=True)
+    # ax.set_yticks(minor_ticks_y, minor=True)
 
     for axi in (ax.xaxis, ax.yaxis):
         for tic in axi.get_minor_ticks():
@@ -74,6 +80,8 @@ def set_plot_lims(ax, state_min, state_max, width):
             tic.tick2line.set_visible(False)
 
     # plt.grid(which='minor', color='#CCCCCC', linewidth=0.3)
+
+def set_plot_lims(ax, state_min, state_max):
 
     # Goal x-y limits
     ax.set_xlim(state_min[0], state_max[0])

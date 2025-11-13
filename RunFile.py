@@ -62,6 +62,14 @@ if __name__ == '__main__':
         base_model = benchmarks.Dubins(args)
     elif args.model == 'Dubins_small':
         base_model = benchmarks.Dubins_small(args)
+    elif args.model == 'Drone2D':
+        base_model = benchmarks.Drone2D(args)
+    elif args.model == 'Drone3D':
+        base_model = benchmarks.Drone3D(args)
+    elif args.model == 'Pendulum':
+        base_model = benchmarks.Pendulum(args)
+    elif args.model == 'MountainCar':
+        base_model = benchmarks.MountainCar(args)
     else:
         assert False, f"The passed model '{args.model}' could not be found"
 
@@ -121,8 +129,15 @@ if __name__ == '__main__':
     from plotting.traces import plot_traces
     from plotting.heatmap import heatmap
 
-    sim = MonteCarloSim(model, partition, policy, policy_inputs, model.x0, verbose=False, iterations=10000)
+    sim = MonteCarloSim(model, partition, policy, policy_inputs, model.x0, verbose=False, iterations=100)
     print('Empirical satisfaction probability:', sim.results['satprob'])
 
-    plot_traces(stamp, [0, 1], partition, model, sim.results['traces'], line=True, num_traces=4)
-    heatmap(stamp, idx_show=[0, 1], slice_values=np.zeros(model.n), partition=partition, results=builderS.results)
+    plot_traces(args, stamp, model.plot_dimensions, partition, model, sim.results['traces'], line=False, num_traces=10, add_unsafe_box=False,)
+    heatmap(args, stamp, idx_show=model.plot_dimensions, slice_values=np.zeros(model.n), partition=partition, results=builderS.results, filename="heatmap_satprob")
+    heatmap(args, stamp, idx_show=model.plot_dimensions, slice_values=np.zeros(model.n), partition=partition, results=policy_inputs, filename="heatmap_inputs")
+
+    if args.model == 'Pendulum':
+        model.plot_trajectory_gif(np.array(sim.results['traces'][0]['x'])[:,0], filename=f'output/pendulum_{stamp}.gif')
+
+    if args.model == 'MountainCar':
+        model.plot_trajectory_gif(np.array(sim.results['traces'][0]['x'])[:,0], filename=f'output/mountaincar_{stamp}.gif')

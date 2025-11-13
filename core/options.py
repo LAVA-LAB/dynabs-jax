@@ -31,8 +31,16 @@ def parse_arguments():
 
     parser.add_argument('--mode', type=str, default='fori_loop',
                         help="Should be one of 'fori_loop', 'vmap', 'python'")
-    parser.add_argument('--batch_size', type=int, default=1,
+    parser.add_argument('--batch_size', type=int, default=1_000_000,
                         help="Batch size for functions vectorized with Jax")
+
+    # Plotting options
+    parser.add_argument('--plot_grid', action=argparse.BooleanOptionalAction, default=False,
+                        help="If True, plot unit grids in figures")
+    parser.add_argument('--plot_title', action=argparse.BooleanOptionalAction, default=False,
+                        help="If True, plot titles in figures")
+    parser.add_argument('--plot_ticks', action=argparse.BooleanOptionalAction, default=False,
+                        help="If True, plot ticks in figures")
 
     # Parse arguments
     args = parser.parse_args()

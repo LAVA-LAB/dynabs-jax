@@ -1,10 +1,12 @@
 from functools import partial, reduce
 
+from core.utils import create_batches
 import jax
 import jax.numpy as jnp
 import numpy as np
 from tqdm import tqdm
-
+from collections import ChainMap
+from itertools import chain
 
 # Note: The following implementation only works for Gaussian distributions with diagonal covariance
 
@@ -206,51 +208,71 @@ def compute_probability_intervals(args, model, partition, frs, max_slice):
         - prob_absorbing: Probability interval of reaching the absorbing state per state-action pair
     '''
 
-    keep = {}
-    prob = {}
-    prob_id = {}
-    prob_nonzero = {}
-    prob_absorbing = {}
-
     # vmap to compute distributions for all actions in a state
     vmap_interval_distribution_per_dim = jax.jit(
         jax.vmap(interval_distribution_per_dim, in_axes=(None, None, None, None, None, None, None, None, 0, 0, 0, None, None, None, None, None), out_axes=(0, 0, 0, 0, 0, 0)),
         static_argnums=(0, 1, 2, 4))
 
-    # For all states
-    for s, frs_s in tqdm(enumerate(frs.values()), total=len(frs)):
-        p, p_idx, p_id, p_nonzero, pa, k = vmap_interval_distribution_per_dim(model.n,
-                                                                              max_slice,
-                                                                              tuple(np.array(model.wrap)),
-                                                                              model.wrap,
-                                                                              args.decimals,
-                                                                              partition.number_per_dim,
-                                                                              partition.regions_per_dim['lower_bounds'],
-                                                                              partition.regions_per_dim['upper_bounds'],
-                                                                              frs_s['idx_lb'],
-                                                                              frs_s['lb'],
-                                                                              frs_s['ub'],
-                                                                              model.noise['cov'],
-                                                                              partition.boundary_lb,
-                                                                              partition.boundary_ub,
-                                                                              partition.region_idx_array,
-                                                                              partition.critical['bools'])
+    pAbs_min = 0.0001
 
-        keep[s] = np.array(k, dtype=bool)
-        prob[s] = np.array(p)
-        prob_id[s] = np.array(p_id)
-        prob_nonzero[s] = np.array(p_nonzero)
-        prob_absorbing[s] = np.round(np.array(pa), args.decimals)
+    starts, ends = create_batches(len(frs), batch_size=args.batch_size)
+    
+    list_prob = [[]]*len(starts)
+    list_prob_absorbing = [[]]*len(starts)
+    list_prob_id = [[]]*len(starts)
 
-        nans = np.where(np.any(np.isnan(prob[s]), axis=0))[0]
-        if len(nans) > 0:
-            print('NaN probabilities in state {} at position {}'.format(s, len(nans)))
+    frs_values = frs.values()
 
-    pAbs_min = 0.001
+    for iter, (i, j) in enumerate(zip(starts, ends)):
+        print('- Compute probability intervals for states {} to {}... (out of {})'.format(i, j - 1, len(frs_values)))
+        
+        keep = {}
+        prob = {}
+        prob_id = {}
+        prob_nonzero = {}
+        prob_absorbing = {}
 
-    prob = [[np.round(val[prob_nonzero[s][a]], args.decimals) for a, val in enumerate(row) if keep[s][a]] for s, row in prob.items()]
-    prob_absorbing = [[np.maximum(pAbs_min, np.round(val, args.decimals)) for a, val in enumerate(row) if keep[s][a]] for s, row in prob_absorbing.items()]
-    prob_id = {s: {a: val[prob_nonzero[s][a]] for a, val in enumerate(row) if keep[s][a]} for s, row in prob_id.items()}
+        # For all states
+        for s, frs_s in tqdm(zip(np.arange(i,j), list(frs_values)[i:j]), total=j-i):
+            p, p_idx, p_id, p_nonzero, pa, k = vmap_interval_distribution_per_dim(model.n,
+                                                                                max_slice,
+                                                                                tuple(np.array(model.wrap)),
+                                                                                model.wrap,
+                                                                                args.decimals,
+                                                                                partition.number_per_dim,
+                                                                                partition.regions_per_dim['lower_bounds'],
+                                                                                partition.regions_per_dim['upper_bounds'],
+                                                                                frs_s['idx_lb'],
+                                                                                frs_s['lb'],
+                                                                                frs_s['ub'],
+                                                                                model.noise['cov'],
+                                                                                partition.boundary_lb,
+                                                                                partition.boundary_ub,
+                                                                                partition.region_idx_array,
+                                                                                partition.critical['bools'])
+
+            keep[s] = np.array(k, dtype=bool)
+            prob[s] = np.array(p)
+            prob_id[s] = np.array(p_id)
+            prob_nonzero[s] = np.array(p_nonzero)
+            prob_absorbing[s] = np.round(np.array(pa), args.decimals)
+
+            nans = np.where(np.any(np.isnan(prob[s]), axis=0))[0]
+            if len(nans) > 0:
+                print('NaN probabilities in state {} at position {}'.format(s, len(nans)))
+
+        list_prob[iter] = [[np.round(val[prob_nonzero[s][a]], args.decimals) for a, val in enumerate(row) if keep[s][a]] for s, row in prob.items()]
+        list_prob_absorbing[iter] = [[np.maximum(pAbs_min, np.round(val, args.decimals)) for a, val in enumerate(row) if keep[s][a]] for s, row in prob_absorbing.items()]
+        list_prob_id[iter] = {s: {a: val[prob_nonzero[s][a]] for a, val in enumerate(row) if keep[s][a]} for s, row in prob_id.items()}
+
+    # Merge list_prob over batches
+    prob = list(chain(*list_prob))
+    prob_absorbing = list(chain(*list_prob_absorbing))
+    prob_id = dict(ChainMap(*list_prob_id))
+
+    # prob = list_prob[0]
+    # prob_absorbing = list_prob_absorbing[0]
+    # prob_id = list_prob_id[0]
 
     print('-- Number of times function was compiled:', interval_distribution_per_dim._cache_size())
 

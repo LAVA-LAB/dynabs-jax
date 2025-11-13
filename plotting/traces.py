@@ -8,13 +8,13 @@ from matplotlib.patches import Rectangle
 from scipy.interpolate import interp1d
 
 from core.utils import cm2inch, remove_consecutive_duplicates
-from plotting.utils import plot_boxes, plot_grid, set_plot_lims
+from plotting.utils import plot_boxes, plot_grid, set_plot_lims, set_plot_ticks
 
 mpl.rcParams['pdf.fonttype'] = 42
 mpl.rcParams['ps.fonttype'] = 42
 
 
-def plot_traces(stamp, idx_show, partition, model, traces, line=True, num_traces=10, add_unsafe_box=True):
+def plot_traces(args, stamp, idx_show, partition, model, traces, line=True, num_traces=10, add_unsafe_box=True, filename="traces"):
     fig, ax = plt.subplots(figsize=cm2inch(6.1, 5), dpi=300)
 
     font = {'size': 10}
@@ -22,24 +22,33 @@ def plot_traces(stamp, idx_show, partition, model, traces, line=True, num_traces
 
     i1, i2 = np.array(idx_show, dtype=int)
 
-    plt.xlabel(f'${model.state_variables[i1]}$', labelpad=0)
-    plt.ylabel(f'${model.state_variables[i2]}$', labelpad=0)
+    plt.xlabel(f'${model.state_variables[i1]}$', labelpad=2)
+    plt.ylabel(f'${model.state_variables[i2]}$', labelpad=2)
 
     if add_unsafe_box:
         expand = 1
     else:
         expand = 0
 
-    set_plot_lims(ax,
+    if args.plot_ticks:
+        set_plot_ticks(ax,
                   state_min=np.array(partition.boundary_lb)[[i1, i2]] - expand,
                   state_max=np.array(partition.boundary_ub)[[i1, i2]] + expand,
                   width=np.array(partition.cell_width))
+    else:
+        ax.set_xticks([])
+        ax.set_yticks([])
+    
+    set_plot_lims(ax,
+                  state_min=np.array(partition.boundary_lb)[[i1, i2]] - expand,
+                  state_max=np.array(partition.boundary_ub)[[i1, i2]] + expand)
 
     # Plot grid
-    plot_grid(ax,
-              state_min=np.array(partition.boundary_lb)[[i1, i2]],
-              state_max=np.array(partition.boundary_ub)[[i1, i2]],
-              size=[1, 1])
+    if args.plot_grid:
+        plot_grid(ax,
+                state_min=np.array(partition.boundary_lb)[[i1, i2]],
+                state_max=np.array(partition.boundary_ub)[[i1, i2]],
+                size=[1, 1])
 
     # Plot goal/unsafe regions
     plot_boxes(ax, model, plot_dimensions=[i1, i2])
@@ -105,13 +114,16 @@ def plot_traces(stamp, idx_show, partition, model, traces, line=True, num_traces
             # Plot trace
             plt.plot(*interpolated_points.T, '-', color="blue", linewidth=1);
 
-    plt.gca().set_aspect('equal')
+    # plt.gca().set_aspect('equal')
 
     # Set tight layout
     fig.tight_layout()
 
+    if args.plot_title:
+        ax.set_title(f"Simulation for {args.model}")
+
     # Save figure
-    plt.savefig(f'output/traces_{stamp}.pdf', format='pdf', bbox_inches='tight')
-    plt.savefig(f'output/traces_{stamp}.png', format='png', bbox_inches='tight')
+    plt.savefig(f'output/{filename}_{stamp}.pdf', format='pdf', bbox_inches='tight')
+    plt.savefig(f'output/{filename}_{stamp}.png', format='png', bbox_inches='tight')
 
     plt.show()

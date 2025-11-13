@@ -2,9 +2,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import matplotlib as mpl
 
+from plotting.utils import set_plot_ticks
 
-def heatmap(stamp, idx_show, slice_values, partition, results):
+def heatmap(args, stamp, idx_show, slice_values, partition, results, filename="heatmap"):
     '''
     Create heat map for the satisfaction probability from any initial state.
 
@@ -16,6 +18,17 @@ def heatmap(stamp, idx_show, slice_values, partition, results):
     None.
 
     '''
+
+    font = {'size': 10}
+    mpl.rc('font', **font)
+
+    sns.set_style("whitegrid", {
+    "font.size": 12,
+    "axes.titlesize": 14,
+    "axes.labelsize": 12,
+    "xtick.labelsize": 10,
+    "ytick.labelsize": 10
+})
 
     i1, i2 = np.array(idx_show, dtype=int)
 
@@ -43,10 +56,22 @@ def heatmap(stamp, idx_show, slice_values, partition, results):
 
     DF = pd.DataFrame(values[::-1, :], index=Y[::-1], columns=X)
 
-    sns.heatmap(DF)
+    ax = sns.heatmap(DF)
+
+    if args.plot_ticks:
+        set_plot_ticks(ax,
+                  state_min=np.array(partition.boundary_lb)[[i1, i2]] - expand,
+                  state_max=np.array(partition.boundary_ub)[[i1, i2]] + expand,
+                  width=np.array(partition.cell_width))
+    else:
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+    if args.plot_title:
+        ax.set_title(f"Heatmap for {args.model}")
 
     # Save figure
-    plt.savefig(f'output/heatmap_{stamp}.pdf', format='pdf', bbox_inches='tight')
-    plt.savefig(f'output/heatmap_{stamp}.png', format='png', bbox_inches='tight')
+    plt.savefig(f'output/{filename}_{stamp}.pdf', format='pdf', bbox_inches='tight')
+    plt.savefig(f'output/{filename}_{stamp}.png', format='png', bbox_inches='tight')
 
     plt.show()

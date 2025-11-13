@@ -101,7 +101,7 @@ class MonteCarloSim():
                 x_tuple[k] = -1
 
                 if self.verbose or True:
-                    print(f'- Absorbing state reached (x = {x[k]}), so abort')
+                    print(f'- Absorbing state reached at k = {k} (x = {x[k]}), so abort')
                 return trace, success
 
             # If current region is the goal state ...
