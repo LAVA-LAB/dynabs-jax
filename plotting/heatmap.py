@@ -47,7 +47,7 @@ def heatmap(args, stamp, idx_show, slice_values, partition, results, filename="h
 
             # Retrieve state ID
             state_idx = partition.region_idx_array[tuple(slice_at)]
-
+            
             # Fill heatmap value
             values[y, x] = results[state_idx]
 

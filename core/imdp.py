@@ -88,22 +88,21 @@ class BuilderStorm:
             choice_labeling.add_label(label)
 
         s0 = partition.x2state(x0)[0]
-        print(s0)
-
+        
         # For all states
         print('\n- Build iMDP...')
         for s in tqdm(states):
 
-            if s == s0:
-                print(f'- Current state is initial state (s={s})')
+            # if s == s0:
+                # print(f'- Current state is initial state (s={s})')
 
             # For each state, create a new row group
             self.builder.new_row_group(row)
             states_created += 1
             enabled_in_s = P_id[s].keys()
 
-            if s == s0:
-                print(f'- Number of actions enabled: {len(enabled_in_s)}')
+            # if s == s0:
+            #     print(f'- Number of actions enabled: {len(enabled_in_s)}')
 
             # If no actions are enabled at all, add a deterministic transition to the absorbing state
             if len(enabled_in_s) == 0 or s in critical_regions:
@@ -121,8 +120,8 @@ class BuilderStorm:
                 for a in enabled_in_s:
                     choice_labeling.add_label_to_choice(str(a), row)
 
-                    if s == s0:
-                        print(f'-- Actions {a}: ',self.intervals_state[s][a])
+                    # if s == s0:
+                    #     print(f'-- Actions {a}: ',self.intervals_state[s][a])
 
                     for s_next, intv in self.intervals_state[s][a].items():
                         self.builder.add_next_value(row, s_next, intv)

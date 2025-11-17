@@ -22,6 +22,11 @@ from core.model import parse_linear_model, parse_nonlinear_model
 from core.options import parse_arguments
 from core.partition import RectangularPartition
 
+import sys
+# sys.argv = ['RunFile.py', '--model', 'Dubins_small', '--batch_size', '3000']
+# sys.argv = ['RunFile.py', '--model', 'Pendulum', '--batch_size', '30000']
+sys.argv = ['RunFile.py', '--model', 'MountainCar', '--batch_size', '30000']
+
 if __name__ == '__main__':
     jax.config.update("jax_default_matmul_precision", "high")
 
@@ -134,7 +139,10 @@ if __name__ == '__main__':
 
     plot_traces(args, stamp, model.plot_dimensions, partition, model, sim.results['traces'], line=False, num_traces=10, add_unsafe_box=False,)
     heatmap(args, stamp, idx_show=model.plot_dimensions, slice_values=np.zeros(model.n), partition=partition, results=builderS.results, filename="heatmap_satprob")
-    heatmap(args, stamp, idx_show=model.plot_dimensions, slice_values=np.zeros(model.n), partition=partition, results=policy_inputs, filename="heatmap_inputs")
+    if model.p >  1:
+        heatmap(args, stamp, idx_show=model.plot_dimensions, slice_values=np.zeros(model.n), partition=partition, results=policy_inputs[:,0], filename="heatmap_inputs")
+    else:
+        heatmap(args, stamp, idx_show=model.plot_dimensions, slice_values=np.zeros(model.n), partition=partition, results=policy_inputs, filename="heatmap_inputs")
 
     if args.model == 'Pendulum':
         model.plot_trajectory_gif(np.array(sim.results['traces'][0]['x'])[:,0], filename=f'output/pendulum_{stamp}.gif')
