@@ -40,9 +40,6 @@ class Dubins(DubinsDynamics):
 
         self.partition['boundary'] = np.array([[-10, 0, -np.pi, -3], [10, 10, np.pi, 3]])
         self.partition['boundary_jnp'] = jnp.array(self.partition['boundary'])
-        # self.partition['number_per_dim'] = np.array([40, 20, 20, 20]) # MODIFIED THIS LINE
-        # self.partition['number_per_dim'] = np.array([20, 10, 10, 10])        
-        # self.partition['number_per_dim'] = np.array([30, 15, 15, 15]) # Working without noise
         self.partition['number_per_dim'] = np.array([30, 15, 15, 15])
 
         self.goal = np.array([

@@ -50,17 +50,18 @@ conda install jaxlib=*=*cuda* jax cuda-nvcc -c conda-forge -c nvidia
 To instead install JAX without CUDA support, run:
 
 ```
-pip install jax==0.5.3
+pip install jax==0.8.0
 ```
+
+> We have also tested running with JAX on METAL. However, performance on Apple Silicon chips currently seems better on an up-to-date version of JAX+JAXlib (running on CPU) than on JAX on METAL.
 
 ### 3. Install Storm and Stormpy
 
 We use the probabilistic model checker Storm (via its Python bindings provided by Stormpy) to compute optimal policies on interval MDP (IMDP) abstractions.
 Install the following
 
-1. Install Storm 1.9.0 (Make sure to install the required dependencies first: https://www.stormchecker.org/documentation/obtain-storm/build.html).
-2. Install Pycarl 2.3.0 within the conda environment (https://moves-rwth.github.io/pycarl/)
-3. Install Stormpy 1.9.0 within the conda environment (https://moves-rwth.github.io/stormpy/).
+1. Install Storm 1.11.0 (Make sure to install the required dependencies first: https://www.stormchecker.org/documentation/obtain-storm/build.html).
+2. Install Stormpy 1.11.0 within the conda environment (https://moves-rwth.github.io/stormpy/).
 
 # Reproducing experiments
 
@@ -81,3 +82,20 @@ python RunFile.py --model Dubins_small
 ```
 
 Created figures will be stored in the `output/` folder. The runtimes and model sizes can be read from the terminal output.
+
+## Other benchmarks
+
+Currently, the following benchmarks are implemented and have been tested:
+
+- Dubins
+- Dubins_small
+- Drone2D
+- MountainCar
+- Pendulum
+
+To run one of these benchmarks, simply replace the `--model ...` argument above with the respective benchmark name.
+
+## Debugging
+
+In case you run into memory issues, place try changing the `--batch_size` argument, which is set to 100,000 by default. A reasonable setting might be 30,000 or even 10,000.
+

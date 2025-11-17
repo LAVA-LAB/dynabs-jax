@@ -41,25 +41,7 @@ class Dubins_small(DubinsSmallDynamics):
         self.uMin = [-0.50 * np.pi, -3]
         self.uMax = [0.50 * np.pi, 3]
         self.num_actions = [7, 5]
-
-        # Input L_p spaces range
-        # SIM_ID = 00
-        # self.epsilons = np.array([0.0,0.0])
-        # # SIM_ID = 01
-        # self.epsilons = np.array([0.01,0.01])
-        # SIM_ID = 02
-        # self.epsilons = np.array([0.02,0.02])
-        # # SIM_ID = 03
-        # self.epsilons = np.array([0.04,0.08])
-        # # SIM_ID = 04
-        # self.epsilons = np.array([0.1,0.2])
-        # SIM_ID = 05
-        # self.epsilons = np.array([0.15,0.3])
-        # # SIM_ID = 06
-        # self.epsilons = np.array([0.06,0.12])
-        # SIM_ID = 07
-        # self.epsilons = np.array([0.09,0.18])
-        # SIM_ID = 08
+        
         self.epsilons = np.array([0.075,0.15])
 
         self.partition['boundary'] = np.array([[-10, -10, -np.pi], [10, 10, np.pi]])
@@ -67,13 +49,14 @@ class Dubins_small(DubinsSmallDynamics):
         self.partition['number_per_dim'] = np.array([20, 20, 11])
 
         self.goal = np.array([
-            [[5, 5, -np.pi], [10, 10, np.pi]]
+            [[-10, 5, -np.pi], [-5, 10, np.pi]]
         ], dtype=float)
 
         self.critical = np.array([
-            [[-10, -10, -np.pi], [-9, -9, np.pi]],
+            [[-10, -1, -np.pi], [-1, 1, np.pi]],
+            [[-1, -5, -np.pi], [1, 5, np.pi]]
         ], dtype=float)
 
-        self.x0 = np.array([-5, 5, 0])
+        self.x0 = np.array([-7.5, -7.5, 0])
 
         return

@@ -31,7 +31,7 @@ def parse_arguments():
 
     parser.add_argument('--mode', type=str, default='fori_loop',
                         help="Should be one of 'fori_loop', 'vmap', 'python'")
-    parser.add_argument('--batch_size', type=int, default=1_000_000,
+    parser.add_argument('--batch_size', type=int, default=100_000,
                         help="Batch size for functions vectorized with Jax")
 
     # Plotting options

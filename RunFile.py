@@ -23,9 +23,9 @@ from core.options import parse_arguments
 from core.partition import RectangularPartition
 
 import sys
-# sys.argv = ['RunFile.py', '--model', 'Dubins_small', '--batch_size', '3000']
-# sys.argv = ['RunFile.py', '--model', 'Pendulum', '--batch_size', '30000']
-sys.argv = ['RunFile.py', '--model', 'MountainCar', '--batch_size', '30000']
+# sys.argv = ['RunFile.py', '--model', 'Dubins_small', '--batch_size', '30000']
+sys.argv = ['RunFile.py', '--model', 'Pendulum', '--batch_size', '30000']
+# sys.argv = ['RunFile.py', '--model', 'MountainCar', '--batch_size', '30000']
 
 if __name__ == '__main__':
     jax.config.update("jax_default_matmul_precision", "high")
@@ -37,10 +37,10 @@ if __name__ == '__main__':
         jax.config.update('jax_platform_name', 'cpu')
 
     print('=== JAX STATUS ===')
-    print(f'Devices available: {jax.devices()}')
-    from jax.lib import xla_bridge
+    # print(f'Devices available: {jax.devices()}')
+    from jax.extend.backend import get_backend
 
-    print(f'Jax runs on: {xla_bridge.get_backend().platform}')
+    print(f'Jax runs on: {get_backend().platform}')
     print('==================\n')
 
     np.random.seed(args.seed)
@@ -126,7 +126,7 @@ if __name__ == '__main__':
     policy, policy_inputs = builderS.get_policy(actions)
     print(f'- Verify with storm took: {(time.time() - t):.3f} sec.')
     print('Total sum of reach probs:', np.sum(builderS.results))
-    print('In state {}: {}'.format(model.x0, builderS.get_value_from_tuple(model.x0, partition)))
+    print('Value in state {}: {}'.format(model.x0, builderS.get_value_from_tuple(model.x0, partition)))
 
     # %% Simulations and plot
 
