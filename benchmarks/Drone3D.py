@@ -37,8 +37,6 @@ class Drone3D(DroneDynamics):
         self.uMax = [3, 3, 3]
         self.num_actions = [7, 7, 7]
 
-        self.epsilons = np.array([0])
-
         v_min = -4.5
         v_max = 4.5
 

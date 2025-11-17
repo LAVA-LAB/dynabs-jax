@@ -36,8 +36,6 @@ class Dubins(DubinsDynamics):
         self.uMax = [0.5 * np.pi, 5]
         self.num_actions = [7, 7]
 
-        self.epsilons = np.array([0, 0])
-
         self.partition['boundary'] = np.array([[-10, 0, -np.pi, -3], [10, 10, np.pi, 3]])
         self.partition['boundary_jnp'] = jnp.array(self.partition['boundary'])
         self.partition['number_per_dim'] = np.array([30, 15, 15, 15])

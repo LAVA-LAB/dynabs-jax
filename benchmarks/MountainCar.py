@@ -41,8 +41,6 @@ class MountainCar(MountainCarDynamics):
         self.uMax = [1]
         self.num_actions = [5]
 
-        self.epsilons = np.array([0.2])
-
         self.partition['boundary'] = np.array([[-1.2, -0.07], [0.6, 0.07]])
         self.partition['boundary_jnp'] = jnp.array(self.partition['boundary'])
         self.partition['number_per_dim'] = 0.5 * np.array([360, 140])

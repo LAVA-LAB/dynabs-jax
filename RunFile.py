@@ -22,9 +22,9 @@ from core.model import parse_linear_model, parse_nonlinear_model
 from core.options import parse_arguments
 from core.partition import RectangularPartition
 
-import sys
+# import sys
 # sys.argv = ['RunFile.py', '--model', 'Dubins_small', '--batch_size', '30000']
-sys.argv = ['RunFile.py', '--model', 'Pendulum', '--batch_size', '30000']
+# sys.argv = ['RunFile.py', '--model', 'Pendulum', '--batch_size', '30000']
 # sys.argv = ['RunFile.py', '--model', 'MountainCar', '--batch_size', '30000']
 
 if __name__ == '__main__':

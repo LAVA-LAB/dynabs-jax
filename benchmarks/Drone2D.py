@@ -37,8 +37,6 @@ class Drone2D(DroneDynamics):
         self.uMax = [3 ,3]
         self.num_actions = [7, 7]
 
-        self.epsilons = np.array([0])
-
         v_min = -4.5 # -3.5 not enough (given 0.50 satprob)
         v_max = 4.5
 

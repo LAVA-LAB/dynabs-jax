@@ -37,8 +37,6 @@ class Pendulum(PendulumDynamics):
         self.uMax = [2]
         self.num_actions = [7]
 
-        self.epsilons = np.array([0.25])
-
         self.partition['boundary'] = np.array([[-np.pi, -8], [np.pi, 8]])
         self.partition['boundary_jnp'] = jnp.array(self.partition['boundary'])
         self.partition['number_per_dim'] = 0.5 * np.array([200, 100])

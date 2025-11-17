@@ -9,7 +9,7 @@ options.txt
 path_to_prism.txt
 
 output/*
-!output/.keep
+!output/.dontRemove
 
 # Avoid ancillary folder to be pushed
 _ancillary/*

@@ -41,8 +41,6 @@ class Dubins_small(DubinsSmallDynamics):
         self.uMin = [-0.50 * np.pi, -3]
         self.uMax = [0.50 * np.pi, 3]
         self.num_actions = [7, 5]
-        
-        self.epsilons = np.array([0.075,0.15])
 
         self.partition['boundary'] = np.array([[-10, -10, -np.pi], [10, 10, np.pi]])
         self.partition['boundary_jnp'] = jnp.array(self.partition['boundary'])
